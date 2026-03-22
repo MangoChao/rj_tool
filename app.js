@@ -47,23 +47,22 @@ app.get('/', (req, res) => {
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
         .mobile-container { width: 100%; max-width: 400px; height: 100%; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
         .hidden { display: none !important; }
+        
+        /* Loading 樣式 */
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--my-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 其他 CSS 保持原樣... */
         .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
         .grid-container { flex: 1; display: flex; flex-direction: column; gap: 4px; min-height: 0; margin-bottom: 5px; }
         .row { display: flex; gap: 5px; align-items: center; flex: 1; min-height: 0; }
         .row-label { width: 35px; font-size: 0.75em; color: #666; text-align: center; font-weight: bold; }
-        .cell { 
-            flex: 1; height: 98%; background: #222; border-radius: 6px; cursor: pointer; position: relative;
-            display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2em;
-            border: 1px solid #333; transition: transform 0.1s; user-select: none; color: #333; overflow: hidden;
-        }
+        .cell { flex: 1; height: 98%; background: #222; border-radius: 6px; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2em; border: 1px solid #333; transition: transform 0.1s; user-select: none; color: #333; overflow: hidden; }
         .cell.mine-ok { background: var(--my-green) !important; color: #fff !important; border-color: #34ce57; }
         .cell.mine-wrong { background: #000 !important; color: var(--other-red) !important; }
         .cell.others-ok { background: var(--other-red) !important; color: #fff !important; opacity: 0.8; }
-        .prob { 
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: none; transition: all 0.2s ease; font-weight: 900; line-height: 1;
-        }
+        .prob { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.2s ease; font-weight: 900; line-height: 1; }
         .btn-group { display: flex; gap: 10px; }
         button { flex: 1; padding: 14px; font-size: 1em; font-weight: bold; border: none; border-radius: 8px; background: var(--my-green); color: white; cursor: pointer; }
         .btn-danger { background: #333; color: #999; }
@@ -74,8 +73,13 @@ app.get('/', (req, res) => {
     </style>
 </head>
 <body oncontextmenu="return false;">
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="loader-text" style="font-size: 0.9em; color: #666;">載入中...</div>
+    </div>
+
     <div class="mobile-container">
-        <div id="home-view" class="card" style="margin-top: 15vh;">
+        <div id="home-view" class="card hidden" style="margin-top: 15vh;">
             <h1 style="color:var(--my-green); font-size: 1.6em;">Romeo and Juliet Tool</h1>
             <p style="font-size: 0.9em; color: #666;">運作房間: <span id="room-count">...</span> / 1000</p>
             <button onclick="initAction('create')">開始使用</button>
@@ -114,6 +118,29 @@ app.get('/', (req, res) => {
         let socket, currentRoom = '', myName = '', globalGridData = {};
         let lastRightClick = 0, countdownTimer = null;
 
+        // --- 核心優化：判定是否顯示首頁 ---
+        const urlParams = new URLSearchParams(location.search);
+        const targetRoom = urlParams.get('room');
+
+        window.onload = () => {
+            getStats();
+            if (targetRoom) {
+                // 如果有房間參數，維持 Loading，並嘗試加入
+                document.getElementById('loader-text').innerText = '正在進入房間 ' + targetRoom + '...';
+                initAction('join', targetRoom);
+            } else {
+                // 如果沒有房間參數，直接隱藏 Loading，顯示首頁
+                hideLoader();
+                document.getElementById('home-view').classList.remove('hidden');
+            }
+        };
+
+        function hideLoader() {
+            const loader = document.getElementById('loader');
+            if (loader) loader.classList.add('hidden');
+        }
+
+        // --- Socket 與 邏輯部分 (微調加入 hideLoader) ---
         function getStats() { fetch('/api/stats').then(res => res.json()).then(data => { document.getElementById('room-count').innerText = data.count; }).catch(()=>{}); }
 
         function initAction(type, roomID = null) {
@@ -124,6 +151,7 @@ app.get('/', (req, res) => {
 
         function setupSocketListeners() {
             socket.on('room-joined', d => {
+                hideLoader(); // 成功進入，關閉 Loading
                 currentRoom = d.roomId; myName = d.identityName; sessionStorage.setItem('rj_uid', d.uid);
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('room-view').classList.remove('hidden');
@@ -132,6 +160,14 @@ app.get('/', (req, res) => {
                 window.history.replaceState({}, '', '?room=' + d.roomId);
                 globalGridData = d.gridState || {}; renderGrid();
             });
+
+            socket.on('error-msg', m => { 
+                hideLoader(); // 發生錯誤（如房間不存在），關閉 Loading
+                window.history.replaceState({}, '', '/'); 
+                showConfirmModal(m, [{ text: '確定', callback: () => { location.href='/'; } }]); 
+            });
+
+            // 其餘 socket 監聽保持不變...
             socket.on('grid-sync', d => {
                 const key = d.r + '_' + d.c;
                 if (d.name === 'ALL_CLEAR') globalGridData[key] = {};
@@ -147,15 +183,16 @@ app.get('/', (req, res) => {
             });
             socket.on('stop-countdown', () => { if(countdownTimer) clearInterval(countdownTimer); document.getElementById('modal-overlay').style.display = 'none'; });
             socket.on('grid-reset-sync', () => { globalGridData = {}; renderGrid(); });
-            socket.on('error-msg', m => { window.history.replaceState({}, '', '/'); showConfirmModal(m, [{ text: '確定', callback: () => { location.href='/'; } }]); });
             socket.on('room-event', d => { window.history.replaceState({}, '', '/'); showConfirmModal(d.msg, [{ text: '回首頁', callback: () => { location.href='/'; } }]); });
             socket.on('update-members', (list) => {
                 sessionStorage.setItem('rj_members', JSON.stringify(list));
-                document.getElementById('online-count-display').innerText = list.length + '/4';
+                const onlineDisplay = document.getElementById('online-count-display');
+                if (onlineDisplay) onlineDisplay.innerText = list.length + '/4';
                 renderGrid();
             });
         }
 
+        // --- 網格渲染與彈窗邏輯保持不變 ---
         const grid = document.getElementById('grid');
         for (let r = 10; r >= 1; r--) {
             const rowDiv = document.createElement('div'); rowDiv.className = 'row'; rowDiv.innerHTML = '<div class="row-label">F'+r+'</div>';
@@ -209,8 +246,17 @@ app.get('/', (req, res) => {
         function showConfirmModal(msg, opts) { document.getElementById('modal-content').innerText = msg; const area = document.getElementById('modal-btns'); area.innerHTML = ''; opts.forEach(o => { const b = document.createElement('button'); b.innerText = o.text; if(o.style === 'danger') b.style.background = '#444'; b.onclick = () => { o.callback(); }; area.appendChild(b); }); document.getElementById('modal-overlay').style.display = 'flex'; }
         function askReset() { showConfirmModal('清空全隊所有數據？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '確定', callback: () => { socket.emit('grid-reset', currentRoom); document.getElementById('modal-overlay').style.display = 'none'; } }]); }
         function askLeave() { showConfirmModal('退出房間？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '離開', callback: () => { sessionStorage.removeItem('rj_uid'); sessionStorage.removeItem('rj_members'); location.href='/'; } }]); }
-        function copyLink() { navigator.clipboard.writeText(location.origin + '/?room=' + currentRoom); const t=document.getElementById('toast'); t.style.opacity='1'; setTimeout(()=>t.style.opacity='0',1500); }
-        window.onload = () => { getStats(); const r = new URLSearchParams(location.search).get('room'); if(r) initAction('join', r); };
+        
+        function copyLink() {
+            const url = location.origin + '/?room=' + currentRoom;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => showToast());
+            } else {
+                const ta = document.createElement("textarea"); ta.value = url; ta.style.position = "fixed"; ta.style.left = "-9999px";
+                document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast(); } catch (e) {} document.body.removeChild(ta);
+            }
+        }
+        function showToast() { const t = document.getElementById('toast'); t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
     </script>
 </body>
 </html>
