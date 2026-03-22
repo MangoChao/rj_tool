@@ -33,11 +33,9 @@ app.get('/', (req, res) => {
         body { display: flex; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .mobile-container { width: 100%; max-width: 400px; min-height: 100%; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
         .hidden { display: none !important; }
-        
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; transition: opacity 0.3s; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--my-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .card { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 8px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
         .grid-container { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
         .row { display: flex; gap: 5px; align-items: center; height: 40px; }
@@ -48,16 +46,20 @@ app.get('/', (req, res) => {
         .cell.others-ok { background: var(--other-red) !important; color: #fff !important; opacity: 0.8; }
         .prob { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-weight: 900; line-height: 1; }
         
-        .btn-group { display: flex; gap: 8px; margin-top: 5px; padding-bottom: 20px; position: relative; z-index: 10; }
+        .control-panel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .code-display-box { background: #000; border: 1px solid #333; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .code-text { color: var(--accent); font-family: monospace; font-size: 1.4em; font-weight: bold; letter-spacing: 2px; }
+        .auto-copy-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.85em; color: #888; }
+        
+        .btn-group { display: flex; gap: 8px; padding-bottom: 20px; position: relative; z-index: 10; }
         button { flex: 1; padding: 15px; font-size: 1em; font-weight: bold; border: none; border-radius: 8px; background: var(--my-green); color: white; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .btn-danger { background: #333; color: #999; }
         .fixed-footer { color: var(--accent); font-size: 11px; font-weight: bold; text-align: center; padding: 5px 0 15px 0; user-select: none; }
-        
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 5000; backdrop-filter: blur(8px); }
-        .modal-card { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 25px; border: 1px solid #444; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal-card { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 25px; border: 1px solid #444; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 8px 20px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 6000; font-size: 14px; font-weight: bold; pointer-events: none; }
-        
         .version-info { font-size: 10px; color: #555; margin-top: 10px; }
+        .copy-hint { color: var(--other-red); font-size: 0.75em; display: block; margin-top: 8px; font-weight: bold; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -71,9 +73,10 @@ app.get('/', (req, res) => {
             <div style="text-align:left; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:15px; border:1px solid #2a2a2a;">
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 左鍵：標記正確格子 / 錯誤格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵：取消自己格子 (手機長按)</p>
-                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子 (手機不支援)</p>
+                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
+                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.0.4 | 最後更新: 2026-03-22 19:47</div>
+            <div class="version-info">v1.0.7 | 最後更新: 2026-03-22 20:33</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
 
@@ -85,8 +88,19 @@ app.get('/', (req, res) => {
                 </div>
                 <div id="share-link-text" style="font-size:0.75em; color:var(--my-green); border:1px solid #333; padding:8px; border-radius:6px; background:#000; margin-top:8px; cursor:pointer" onclick="copyLink()">點擊複製邀請連結</div>
             </div>
+            
             <div class="grid-container" id="grid"></div>
-            <div style="font-size:0.7em; color:#555; text-align:center; margin-bottom:8px;">左鍵切換 | 右鍵取消 | 雙擊右鍵清他人</div>
+            
+            <div class="control-panel">
+                <div class="code-display-box" onclick="copyMyCode()">
+                    <span id="live-code" class="code-text">0000000000</span>
+                </div>
+                <div class="auto-copy-wrap">
+                    <input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"> 
+                    <label for="auto-copy-toggle">開啟自動複製</label>
+                </div>
+            </div>
+
             <div class="btn-group">
                 <button type="button" class="btn-danger" onclick="askReset()">清空全部</button>
                 <button type="button" class="btn-danger" onclick="askLeave()">退出</button>
@@ -97,16 +111,17 @@ app.get('/', (req, res) => {
 
     <div id="modal-overlay">
         <div class="modal-card">
-            <div id="modal-content" style="margin-bottom:25px; line-height:1.6; font-size:1.1em; color:#fff;"></div>
+            <div id="modal-content" style="margin-bottom:25px; line-height:1.6; font-size:1.1em; color:#fff; cursor:pointer;"></div>
             <div id="modal-btns" style="display:flex; gap:10px;"></div>
         </div>
     </div>
-    <div id="toast">已複製邀請連結</div>
+    <div id="toast">已複製</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let socket, currentRoom = '', myName = '', globalGridData = {};
         let lastRightClick = 0, countdownTimer = null;
+        let lastValidCode = "0000000000"; 
         const urlParams = new URLSearchParams(location.search);
         const targetRoom = urlParams.get('room');
 
@@ -125,7 +140,42 @@ app.get('/', (req, res) => {
             else socket.emit('join-room', { roomId: roomID.toUpperCase(), uid: sessionStorage.getItem('rj_uid') });
         }
 
+        function updateMyGreenCode() {
+            let code = "";
+            for (let r = 1; r <= 10; r++) {
+                let found = 0;
+                for (let c = 1; c <= 4; c++) {
+                    const states = globalGridData[r + '_' + c] || {};
+                    if (states[myName] === 1) { found = c; break; }
+                }
+                code += found;
+            }
+            lastValidCode = code;
+            const el = document.getElementById('live-code');
+            if (el) el.innerText = code;
+            if (document.getElementById('auto-copy-toggle')?.checked) { copyTextSilently(code); }
+            return code;
+        }
+
+        function copyMyCode() { copyText(lastValidCode); }
+
+        function copyText(val) {
+            if (!val || val === "0000000000") return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(val).then(() => showToast("已複製: " + val));
+            } else {
+                const ta = document.createElement("textarea"); ta.value = val; ta.style.position = "fixed"; ta.style.left = "-9999px";
+                document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("已複製: " + val); } catch (e) {} document.body.removeChild(ta);
+            }
+        }
+
+        function copyTextSilently(val) {
+            if (!val || val === "0000000000") return;
+            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(val); }
+        }
+
         function setupSocketListeners() {
+            socket.on('disconnect', () => { showBackupModal('連線已中斷。', lastValidCode); });
             socket.on('room-joined', d => {
                 hideLoader(); currentRoom = d.roomId; myName = d.identityName; sessionStorage.setItem('rj_uid', d.uid);
                 document.getElementById('home-view').classList.add('hidden');
@@ -134,20 +184,38 @@ app.get('/', (req, res) => {
                 document.getElementById('my-name-display').innerText = d.identityName;
                 window.history.replaceState({}, '', '?room=' + d.roomId);
                 globalGridData = d.gridState || {}; renderGrid();
+                updateMyGreenCode();
             });
             socket.on('grid-sync', d => {
                 const key = d.r + '_' + d.c;
                 if (d.name === 'ALL_CLEAR') globalGridData[key] = {};
                 else { if(!globalGridData[key]) globalGridData[key] = {}; if(d.state === 0) delete globalGridData[key][d.name]; else globalGridData[key][d.name] = d.state; }
                 renderGrid();
+                updateMyGreenCode();
             });
             socket.on('update-members', (list) => {
                 sessionStorage.setItem('rj_members', JSON.stringify(list));
                 document.getElementById('online-count-display').innerText = list.length + '/4';
                 renderGrid();
             });
-            socket.on('error-msg', m => { hideLoader(); window.history.replaceState({}, '', '/'); showConfirmModal(m, [{ text: '確定', callback: () => location.href='/' }]); });
-            socket.on('grid-reset-sync', () => { globalGridData = {}; renderGrid(); });
+            socket.on('error-msg', m => { 
+                hideLoader(); 
+                if (m === '房間無效。') showBackupModal('房間無效。', lastValidCode);
+                else showConfirmModal(m, [{ text: '確定', callback: () => location.href='/' }]); 
+            });
+            socket.on('grid-reset-sync', () => { globalGridData = {}; lastValidCode = "0000000000"; if (document.getElementById('live-code')) document.getElementById('live-code').innerText = "0000000000"; renderGrid(); });
+        }
+
+        function showBackupModal(mainMsg, code) {
+            const content = document.getElementById('modal-content');
+            const btns = document.getElementById('modal-btns');
+            const overlay = document.getElementById('modal-overlay');
+            content.innerHTML = mainMsg + '<br>當前紀錄：' + code + '<br><span class="copy-hint">點擊複製</span>';
+            content.onclick = () => copyText(code);
+            btns.innerHTML = '';
+            const b = document.createElement('button'); b.type = 'button'; b.innerText = '回到首頁';
+            b.onclick = () => location.href='/'; btns.appendChild(b);
+            overlay.style.display = 'flex';
         }
 
         const grid = document.getElementById('grid');
@@ -166,7 +234,7 @@ app.get('/', (req, res) => {
             grid.appendChild(row);
         }
 
-        function syncAction(r, c, s) { socket.emit('grid-action', { room: currentRoom, r, c, name: myName, state: s }); const k = r+'_'+c; if(!globalGridData[k]) globalGridData[k]={}; if(s===0) delete globalGridData[k][myName]; else globalGridData[k][myName]=s; renderGrid(); }
+        function syncAction(r, c, s) { socket.emit('grid-action', { room: currentRoom, r, c, name: myName, state: s }); const k = r+'_'+c; if(!globalGridData[k]) globalGridData[k]={}; if(s===0) delete globalGridData[k][myName]; else globalGridData[k][myName]=s; renderGrid(); updateMyGreenCode(); }
 
         function renderGrid() {
             const members = JSON.parse(sessionStorage.getItem('rj_members') || '[]');
@@ -224,28 +292,23 @@ app.get('/', (req, res) => {
             const content = document.getElementById('modal-content');
             const btns = document.getElementById('modal-btns');
             if (!content || !btns) return;
-            content.innerText = m; 
-            btns.innerHTML = ''; 
+            content.innerText = m; btns.innerHTML = ''; 
             opts.forEach(o => { 
-                const b = document.createElement('button'); 
-                b.type = 'button';
-                b.innerText = o.text; 
+                const b = document.createElement('button'); b.type = 'button'; b.innerText = o.text; 
                 b.style.background = (o.style === 'danger') ? '#444' : 'var(--my-green)';
-                b.onclick = (e) => { e.stopPropagation(); o.callback(); }; 
-                btns.appendChild(b); 
+                b.onclick = (e) => { e.stopPropagation(); o.callback(); }; btns.appendChild(b); 
             }); 
             document.getElementById('modal-overlay').style.display = 'flex'; 
         }
 
         function askReset() { showConfirmModal('清空全隊數據？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '確定', callback: () => { socket.emit('grid-reset', currentRoom); document.getElementById('modal-overlay').style.display = 'none'; } }]); }
         function askLeave() { showConfirmModal('退出房間？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '離開', callback: () => { sessionStorage.removeItem('rj_uid'); location.href='/'; } }]); }
-        
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
         function copyLink() {
             const url = location.origin + '/?room=' + currentRoom;
-            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(() => showToast()); }
-            else { const ta = document.createElement("textarea"); ta.value = url; ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast(); } catch (e) {} document.body.removeChild(ta); }
+            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(() => showToast("已複製邀請連結")); }
+            else { const ta = document.createElement("textarea"); ta.value = url; ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("已複製邀請連結"); } catch (e) {} document.body.removeChild(ta); }
         }
-        function showToast() { const t = document.getElementById('toast'); t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
     </script>
 </body>
 </html>
@@ -258,11 +321,11 @@ io.on('connection', (socket) => {
         if (rooms.size >= MAX_ROOMS) return socket.emit('error-msg', '目前房間已滿。');
         const roomId = Math.random().toString(36).substring(2, 10).toUpperCase();
         const uid = data.uid || Math.random().toString(36).substring(2, 15);
-        const selected = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
-        rooms.set(roomId, { members: [{ id: socket.id, uid, name: selected[0] }], namePool: selected, lastActive: Date.now(), gridState: {}, isCountingDown: false });
+        const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
+        rooms.set(roomId, { members: [{ id: socket.id, uid, name: shuffled[0] }], namePool: shuffled, lastActive: Date.now(), gridState: {}, isCountingDown: false });
         socket.join(roomId);
-        socket.emit('room-joined', { roomId, identityName: selected[0], gridState: {}, uid });
-        io.to(roomId).emit('update-members', [selected[0]]);
+        socket.emit('room-joined', { roomId, identityName: shuffled[0], gridState: {}, uid });
+        io.to(roomId).emit('update-members', [shuffled[0]]);
     });
 
     socket.on('join-room', (data = {}) => {
@@ -306,4 +369,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('RJ Tool v1.0.4 Online.'));
+server.listen(3000, () => console.log('RJ Tool v1.0.7 Ready.'));
