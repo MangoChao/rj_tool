@@ -7,17 +7,17 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // --- 核心配置 ---
-const ROOM_EXPIRY_MS = 600000;  // 10 分鐘 (10 * 60 * 1000)
+const ROOM_EXPIRY_MS = 600000;  // 10 分鐘
 const MAX_ROOMS = 1000;
 const ANIMAL_NAMES = ['小豬', '阿狗', '阿貓', '兔兔', '牛牛', '老羊', '小雞', '小蛇', '龍哥', '小鬼'];
 
 const rooms = new Map();
 
+// --- 房間自動清理排程 ---
 setInterval(() => {
     const now = Date.now();
     rooms.forEach((room, roomId) => {
         if (now - room.lastActive > ROOM_EXPIRY_MS) {
-            // 通知房間內所有人
             io.to(roomId).emit('error-msg', '房間因 10 分鐘無動作已解散。');
             rooms.delete(roomId);
         }
@@ -90,7 +90,7 @@ app.get('/', (req, res) => {
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.1.5 | 最後更新: 2026-03-22 21:15</div>
+            <div class="version-info">v1.1.7 | 最後更新: 2026-03-23 02:10</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
         <div id="room-view" class="hidden">
@@ -131,19 +131,13 @@ app.get('/', (req, res) => {
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let socket, currentRoomId = '', myName = '', globalGridData = {};
-        let lastRightClick = 0, lastValidCode = "0000000000"; 
-        let pendingRestoreCode = null; 
+        let lastRightClick = 0, lastValidCode = "0000000000", pendingRestoreCode = null;
 
         window.onload = () => {
             getStats();
             const targetRoom = new URLSearchParams(location.search).get('room');
-            if (targetRoom) { 
-                currentRoomId = targetRoom.toUpperCase(); 
-                initAction('join', targetRoom); 
-            } else { 
-                hideLoader(); 
-                document.getElementById('home-view').classList.remove('hidden'); 
-            }
+            if (targetRoom) { currentRoomId = targetRoom.toUpperCase(); initAction('join', targetRoom); }
+            else { hideLoader(); document.getElementById('home-view').classList.remove('hidden'); }
         };
 
         function hideLoader() { const l = document.getElementById('loader'); if(l) { l.style.opacity='0'; setTimeout(()=>l.classList.add('hidden'), 300); } }
@@ -317,16 +311,33 @@ app.get('/', (req, res) => {
                         else if (states[n] === 2) { if (playerPot[n]) playerPot[n] = playerPot[n].filter(v => v !== c); if (n == myName) myWrongs.push(c); }
                     });
                 }
+                
+                // --- 高階推論：排除法推算 ---
                 let changed = true;
                 while (changed) {
                     changed = false;
+                    // 1. 檢查每個玩家「唯一能去的位置」 (這部分維持原樣)
                     members.forEach(n => {
                         if (!Object.values(finalOk).includes(n)) {
                             let avail = (playerPot[n] || []).filter(col => !finalOk[col]);
                             if (avail.length === 1) { finalOk[avail[0]] = n; changed = true; }
                         }
                     });
+
+                    // 2. 檢查每個位置「唯一能容納的人」 (修正點：增加滿 4 人判定)
+                    if (members.length === 4) { // <--- 加入這行
+                        for (let c = 1; c <= 4; c++) {
+                            if (!finalOk[c]) {
+                                let possiblePlayers = members.filter(n => !Object.values(finalOk).includes(n) && playerPot[n].includes(c));
+                                if (possiblePlayers.length === 1) { 
+                                    finalOk[c] = possiblePlayers[0]; 
+                                    changed = true; 
+                                }
+                            }
+                        }
+                    }
                 }
+
                 for (let c = 1; c <= 4; c++) {
                     const cell = document.getElementById('r'+r+'c'+c);
                     const probDiv = cell.querySelector('.prob');
@@ -336,13 +347,24 @@ app.get('/', (req, res) => {
                         if (states[n] === 1) { cell.classList.add(n == myName ? 'mine-ok' : 'others-ok'); cell.querySelector('.val').innerText = n.substring(1); }
                         else if (n == myName && states[n] === 2) { cell.classList.add('mine-wrong'); cell.querySelector('.val').innerText = 'X'; }
                     });
-                    if (Object.keys(states).some(n => states[n] === 1 || (n == myName && states[n] === 2))) { probDiv.innerText = ''; } else {
+
+                    if (Object.keys(states).some(n => states[n] === 1 || (n == myName && states[n] === 2))) { 
+                        probDiv.innerText = ''; 
+                    } else {
                         let pVal = 0;
                         const occupier = finalOk[c];
                         const myConfirmedCol = Object.keys(finalOk).find(k => finalOk[k] === myName);
-                        if (occupier === myName || myConfirmedCol == c) pVal = (myConfirmedCol == c || occupier === myName) ? 100 : 0;
-                        else if (occupier || myConfirmedCol || myWrongs.includes(c)) pVal = 0;
-                        else { let rem = (playerPot[myName] || []).filter(col => !finalOk[col]); if (rem.includes(c)) pVal = Math.floor(100 / (rem.length || 1)); else pVal = 0; }
+                        
+                        // 判定：如果該格確定是某人(包含自己)，或是自己已經確定在別格
+                        if (occupier === myName || myConfirmedCol == c) {
+                            pVal = (myConfirmedCol == c || occupier === myName) ? 100 : 0;
+                        } else if (occupier || myConfirmedCol || myWrongs.includes(c)) {
+                            pVal = 0;
+                        } else { 
+                            let rem = (playerPot[myName] || []).filter(col => !finalOk[col]); 
+                            if (rem.includes(c)) pVal = Math.floor(100 / (rem.length || 1)); else pVal = 0; 
+                        }
+                        
                         probDiv.innerText = pVal + '%';
                         if (pVal === 100) { probDiv.style.fontSize = '85%'; probDiv.style.color = 'var(--accent)'; }
                         else if (pVal === 0) { probDiv.style.fontSize = '30%'; probDiv.style.color = '#444'; }
@@ -399,23 +421,18 @@ io.on('connection', (socket) => {
     socket.on('join-room', (data = {}) => {
         const { roomId, uid } = data;
         let room = rooms.get(roomId);
-        
-        // 若伺服器剛重啟，房間不存在，則自動以此 ID 重建
         if (!room) {
             const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
             room = { members: [], namePool: shuffled, lastActive: Date.now(), gridState: {} };
             rooms.set(roomId, room);
         }
-
         let member = room.members.find(m => m.uid === uid);
-        if (member) {
-            member.id = socket.id;
-        } else if (room.members.length < 4) {
+        if (member) member.id = socket.id;
+        else if (room.members.length < 4) {
             const assignedName = room.namePool.find(n => !room.members.map(m=>m.name).includes(n));
             member = { id: socket.id, uid: uid || Math.random().toString(36).substring(2, 15), name: assignedName };
             room.members.push(member);
         } else return socket.emit('error-msg', '房間已滿。');
-        
         socket.join(roomId);
         socket.emit('room-joined', { roomId, identityName: member.name, gridState: room.gridState, uid: member.uid });
         io.to(roomId).emit('update-members', room.members.map(m => m.name));
@@ -445,4 +462,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('RJ Tool v1.1.5 Online.'));
+server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.1.7 Online.'));
