@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
         body { display: flex; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .mobile-container { width: 100%; max-width: 400px; min-height: 100%; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
         .hidden { display: none !important; }
-        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; transition: opacity 0.3s; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 8000; transition: opacity 0.3s; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--my-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .card { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 8px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
@@ -45,12 +45,10 @@ app.get('/', (req, res) => {
         .cell.mine-wrong { background: #000 !important; color: var(--other-red) !important; }
         .cell.others-ok { background: var(--other-red) !important; color: #fff !important; opacity: 0.8; }
         .prob { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-weight: 900; line-height: 1; }
-        
         .control-panel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
         .code-display-box { background: #000; border: 1px solid #333; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; }
         .code-text { color: var(--accent); font-family: monospace; font-size: 1.4em; font-weight: bold; letter-spacing: 2px; }
         .auto-copy-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.85em; color: #888; }
-        
         .btn-group { display: flex; gap: 8px; padding-bottom: 20px; position: relative; z-index: 10; }
         button { flex: 1; padding: 15px; font-size: 1em; font-weight: bold; border: none; border-radius: 8px; background: var(--my-green); color: white; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .btn-danger { background: #333; color: #999; }
@@ -59,19 +57,12 @@ app.get('/', (req, res) => {
         .modal-card { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 25px; border: 1px solid #444; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 8px 20px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 6000; font-size: 14px; font-weight: bold; pointer-events: none; }
         .version-info { font-size: 10px; color: #555; margin-top: 10px; }
+        .copy-hint { color: var(--other-red); font-size: 0.75em; display: block; margin-top: 8px; font-weight: bold; }
         .record-input { background: #000; border: 1px solid #555; color: var(--accent); width: 100%; padding: 12px; border-radius: 8px; font-size: 1.5em; text-align: center; letter-spacing: 5px; margin-bottom: 10px; outline: none; }
-        .copy-hint { 
-            color: var(--other-red); 
-            font-size: 0.75em; 
-            display: block; 
-            margin-top: 8px; 
-            font-weight: bold; 
-        }
     </style>
 </head>
 <body oncontextmenu="return false;">
     <div id="loader"><div class="spinner"></div><div id="loader-text" style="font-size: 0.9em; color: #666;">載入中...</div></div>
-    
     <div class="mobile-container">
         <div id="home-view" class="card hidden" style="margin-top: 5vh;">
             <h1 style="color:var(--my-green); font-size: 1.6em;">Romeo and Juliet Tool</h1>
@@ -83,10 +74,9 @@ app.get('/', (req, res) => {
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.0.9 | 最後更新: 2026-03-22 20:44</div>
+            <div class="version-info">v1.1.4 | 最後更新: 2026-03-22 21:20</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
-
         <div id="room-view" class="hidden">
             <div class="card" style="padding: 10px;">
                 <div style="display:flex; justify-content:space-between; font-size:0.85em; color:#888; align-items: center;">
@@ -95,9 +85,7 @@ app.get('/', (req, res) => {
                 </div>
                 <div id="share-link-text" style="font-size:0.75em; color:var(--my-green); border:1px solid #333; padding:8px; border-radius:6px; background:#000; margin-top:8px; cursor:pointer" onclick="copyLink()">點擊複製邀請連結</div>
             </div>
-            
             <div class="grid-container" id="grid"></div>
-            
             <div class="control-panel">
                 <div class="code-display-box" onclick="copyMyCode()">
                     <span id="live-code" class="code-text">0000000000</span>
@@ -110,7 +98,6 @@ app.get('/', (req, res) => {
                     <button type="button" style="padding:8px 15px; font-size:0.85em; background:#444;" onclick="askLoadRecord()">載入紀錄</button>
                 </div>
             </div>
-
             <div class="btn-group">
                 <button type="button" class="btn-danger" onclick="askReset()">清空全部</button>
                 <button type="button" class="btn-danger" onclick="askLeave()">退出</button>
@@ -118,7 +105,6 @@ app.get('/', (req, res) => {
             <div class="fixed-footer">Made by CC</div>
         </div>
     </div>
-
     <div id="modal-overlay">
         <div class="modal-card">
             <div id="modal-content" style="margin-bottom:25px; line-height:1.6; font-size:1.1em; color:#fff; cursor:pointer;"></div>
@@ -126,27 +112,44 @@ app.get('/', (req, res) => {
         </div>
     </div>
     <div id="toast">已複製</div>
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let socket, currentRoom = '', myName = '', globalGridData = {};
+        let socket, currentRoomId = '', myName = '', globalGridData = {};
         let lastRightClick = 0, lastValidCode = "0000000000"; 
-        const urlParams = new URLSearchParams(location.search);
-        const targetRoom = urlParams.get('room');
+        let pendingRestoreCode = null; 
 
         window.onload = () => {
             getStats();
-            if (targetRoom) initAction('join', targetRoom);
-            else { hideLoader(); document.getElementById('home-view').classList.remove('hidden'); }
+            // 修正：補回從 URLSearchParams 讀取 room 的變數定義
+            const targetRoom = new URLSearchParams(location.search).get('room');
+            if (targetRoom) { 
+                currentRoomId = targetRoom.toUpperCase(); 
+                initAction('join', targetRoom); 
+            } else { 
+                hideLoader(); 
+                document.getElementById('home-view').classList.remove('hidden'); 
+            }
         };
 
         function hideLoader() { const l = document.getElementById('loader'); if(l) { l.style.opacity='0'; setTimeout(()=>l.classList.add('hidden'), 300); } }
-        function getStats() { fetch('/api/stats?t=' + Date.now()).then(res => res.json()).then(data => { document.getElementById('room-count').innerText = data.count; }); }
+        function showLoader(msg = "載入中...") { 
+            const l = document.getElementById('loader');
+            if(!l) return;
+            document.getElementById('loader-text').innerText = msg;
+            l.classList.remove('hidden'); l.style.opacity='1';
+        }
+        function getStats() { fetch('/api/stats?t=' + Date.now()).then(res => res.json()).then(data => { document.getElementById('room-count').innerText = data.count; }).catch(()=>{}); }
 
-        function initAction(type, roomID = null) {
-            if (!socket) { socket = io(); setupSocketListeners(); }
+        function initAction(type, roomID = null, autoRestore = false) {
+            showLoader(type === 'join' ? "連線中..." : "載入中...");
+            if (socket) { socket.disconnect(); socket = null; } 
+            socket = io({ reconnection: false, timeout: 5000 });
+            if (autoRestore) pendingRestoreCode = lastValidCode;
+            setupSocketListeners();
+            const rId = (roomID || currentRoomId).toUpperCase();
             if (type === 'create') socket.emit('create-room', { uid: sessionStorage.getItem('rj_uid') });
-            else socket.emit('join-room', { roomId: roomID.toUpperCase(), uid: sessionStorage.getItem('rj_uid') });
+            else socket.emit('join-room', { roomId: rId, uid: sessionStorage.getItem('rj_uid') });
+            setTimeout(hideLoader, 5000);
         }
 
         function updateMyGreenCode() {
@@ -160,14 +163,12 @@ app.get('/', (req, res) => {
                 code += found;
             }
             lastValidCode = code;
-            const el = document.getElementById('live-code');
-            if (el) el.innerText = code;
+            if (document.getElementById('live-code')) document.getElementById('live-code').innerText = code;
             if (document.getElementById('auto-copy-toggle')?.checked) copyTextSilently(code);
             return code;
         }
 
         function copyMyCode() { copyText(lastValidCode); }
-
         function copyText(val) {
             if (!val || val === "0000000000") return;
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -177,19 +178,26 @@ app.get('/', (req, res) => {
                 document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("已複製: " + val); } catch (e) {} document.body.removeChild(ta);
             }
         }
-
         function copyTextSilently(val) { if (val && val !== "0000000000" && navigator.clipboard) navigator.clipboard.writeText(val); }
 
         function setupSocketListeners() {
-            socket.on('disconnect', () => showBackupModal('連線已中斷。', lastValidCode));
+            socket.on('connect_error', () => { hideLoader(); showToast("伺服器維護中"); });
+            socket.on('disconnect', () => { hideLoader(); showBackupModal('連線已中斷。', lastValidCode); });
             socket.on('room-joined', d => {
-                hideLoader(); currentRoom = d.roomId; myName = d.identityName; sessionStorage.setItem('rj_uid', d.uid);
+                hideLoader(); 
+                currentRoomId = d.roomId; myName = d.identityName; sessionStorage.setItem('rj_uid', d.uid);
                 document.getElementById('home-view').classList.add('hidden');
                 document.getElementById('room-view').classList.remove('hidden');
                 document.getElementById('display-room-id').innerText = d.roomId;
                 document.getElementById('my-name-display').innerText = d.identityName;
                 window.history.replaceState({}, '', '?room=' + d.roomId);
                 globalGridData = d.gridState || {}; renderGrid(); updateMyGreenCode();
+                if (pendingRestoreCode) {
+                    const code = pendingRestoreCode;
+                    pendingRestoreCode = null;
+                    setTimeout(() => processLoadRecord(code), 300);
+                }
+                document.getElementById('modal-overlay').style.display = 'none';
             });
             socket.on('grid-sync', d => {
                 const key = d.r + '_' + d.c;
@@ -213,12 +221,16 @@ app.get('/', (req, res) => {
         function showBackupModal(mainMsg, code) {
             const content = document.getElementById('modal-content');
             const btns = document.getElementById('modal-btns');
+            const overlay = document.getElementById('modal-overlay');
             content.innerHTML = mainMsg + '<br>當前紀錄：' + code + '<br><span class="copy-hint">點擊複製</span>';
             content.onclick = () => copyText(code);
             btns.innerHTML = '';
-            const b = document.createElement('button'); b.type = 'button'; b.innerText = '回到首頁';
-            b.onclick = () => location.href='/'; btns.appendChild(b);
-            document.getElementById('modal-overlay').style.display = 'flex';
+            const retryBtn = document.createElement('button'); retryBtn.innerText = '嘗試重連';
+            retryBtn.onclick = () => { overlay.style.display = 'none'; initAction('join', currentRoomId, true); };
+            const homeBtn = document.createElement('button'); homeBtn.className = 'btn-danger'; homeBtn.innerText = '回到首頁';
+            homeBtn.onclick = () => location.href='/';
+            btns.appendChild(homeBtn); btns.appendChild(retryBtn);
+            overlay.style.display = 'flex';
         }
 
         function askLoadRecord() {
@@ -233,11 +245,9 @@ app.get('/', (req, res) => {
             cancelBtn.onclick = () => overlay.style.display = 'none';
             const confirmBtn = document.createElement('button'); confirmBtn.innerText = '確認載入';
             confirmBtn.onclick = () => {
-                let inputVal = document.getElementById('load-record-input').value;
-                if (!/^\\d+$/.test(inputVal)) { alert('請輸入數字'); return; }
-                inputVal = inputVal.padEnd(10, '0'); // 自動補 0
-                processLoadRecord(inputVal);
-                overlay.style.display = 'none';
+                let val = document.getElementById('load-record-input').value;
+                if (!/^\\d+$/.test(val)) { alert('請輸入數字'); return; }
+                processLoadRecord(val.padEnd(10, '0')); overlay.style.display = 'none';
             };
             btns.appendChild(cancelBtn); btns.appendChild(confirmBtn);
             overlay.style.display = 'flex';
@@ -248,16 +258,15 @@ app.get('/', (req, res) => {
             const digits = code.split('');
             for (let r = 1; r <= 10; r++) {
                 for (let c = 1; c <= 4; c++) {
-                    const key = r + '_' + c;
-                    if (globalGridData[key] && globalGridData[key][myName] === 1) syncAction(r, c, 0);
+                    const k = r + '_' + c;
+                    if (globalGridData[k] && globalGridData[k][myName] === 1) syncAction(r, c, 0);
                 }
             }
             digits.forEach((digit, index) => {
-                const r = index + 1;
-                const targetCol = parseInt(digit);
+                const r = index + 1; const targetCol = parseInt(digit);
                 if (targetCol >= 1 && targetCol <= 4) {
-                    const key = r + '_' + targetCol;
-                    if (!Object.keys(globalGridData[key] || {}).some(n => n !== myName && globalGridData[key][n] === 1)) syncAction(r, targetCol, 1);
+                    const k = r + '_' + targetCol;
+                    if (!Object.keys(globalGridData[k] || {}).some(n => n !== myName && globalGridData[k][n] === 1)) syncAction(r, targetCol, 1);
                 }
             });
             showToast("紀錄載入完成");
@@ -273,13 +282,13 @@ app.get('/', (req, res) => {
                     if (next === 1) { if (Object.keys(globalGridData[key] || {}).some(n => n != myName && globalGridData[key][n] === 1)) return; for (let i=1; i<=4; i++) if (i !== c && globalGridData[r+'_'+i] && globalGridData[r+'_'+i][myName] === 1) syncAction(r, i, 0); }
                     syncAction(r, c, next);
                 };
-                cell.oncontextmenu = (e) => { e.preventDefault(); const now = Date.now(); if (now - lastRightClick < 400) socket.emit('grid-action', { room: currentRoom, r, c, name: 'ALL_CLEAR', state: 0 }); else syncAction(r, c, 0); lastRightClick = now; };
+                cell.oncontextmenu = (e) => { e.preventDefault(); const now = Date.now(); if (now - lastRightClick < 400) socket.emit('grid-action', { room: currentRoomId, r, c, name: 'ALL_CLEAR', state: 0 }); else syncAction(r, c, 0); lastRightClick = now; };
                 row.appendChild(cell);
             }
             grid.appendChild(row);
         }
 
-        function syncAction(r, c, s) { socket.emit('grid-action', { room: currentRoom, r, c, name: myName, state: s }); const k = r+'_'+c; if(!globalGridData[k]) globalGridData[k]={}; if(s===0) delete globalGridData[k][myName]; else globalGridData[k][myName]=s; renderGrid(); updateMyGreenCode(); }
+        function syncAction(r, c, s) { socket.emit('grid-action', { room: currentRoomId, r, c, name: myName, state: s }); const k = r+'_'+c; if(!globalGridData[k]) globalGridData[k]={}; if(s===0) delete globalGridData[k][myName]; else globalGridData[k][myName]=s; renderGrid(); updateMyGreenCode(); }
 
         function renderGrid() {
             const members = JSON.parse(sessionStorage.getItem('rj_members') || '[]');
@@ -346,11 +355,11 @@ app.get('/', (req, res) => {
             document.getElementById('modal-overlay').style.display = 'flex'; 
         }
 
-        function askReset() { showConfirmModal('清空全隊數據？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '確定', callback: () => { socket.emit('grid-reset', currentRoom); document.getElementById('modal-overlay').style.display = 'none'; } }]); }
+        function askReset() { showConfirmModal('清空全隊數據？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '確定', callback: () => { socket.emit('grid-reset', currentRoomId); document.getElementById('modal-overlay').style.display = 'none'; } }]); }
         function askLeave() { showConfirmModal('退出房間？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '離開', callback: () => { sessionStorage.removeItem('rj_uid'); location.href='/'; } }]); }
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
         function copyLink() {
-            const url = location.origin + '/?room=' + currentRoom;
+            const url = location.origin + '/?room=' + currentRoomId;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => showToast("已複製邀請連結"));
         }
     </script>
@@ -359,14 +368,14 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- Socket 邏輯 (維持不變) ---
+// --- Socket 邏輯 ---
 io.on('connection', (socket) => {
     socket.on('create-room', (data = {}) => {
         if (rooms.size >= MAX_ROOMS) return socket.emit('error-msg', '目前房間已滿。');
         const roomId = Math.random().toString(36).substring(2, 10).toUpperCase();
         const uid = data.uid || Math.random().toString(36).substring(2, 15);
         const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
-        rooms.set(roomId, { members: [{ id: socket.id, uid, name: shuffled[0] }], namePool: shuffled, lastActive: Date.now(), gridState: {}, isCountingDown: false });
+        rooms.set(roomId, { members: [{ id: socket.id, uid, name: shuffled[0] }], namePool: shuffled, lastActive: Date.now(), gridState: {} });
         socket.join(roomId);
         socket.emit('room-joined', { roomId, identityName: shuffled[0], gridState: {}, uid });
         io.to(roomId).emit('update-members', [shuffled[0]]);
@@ -374,8 +383,12 @@ io.on('connection', (socket) => {
 
     socket.on('join-room', (data = {}) => {
         const { roomId, uid } = data;
-        const room = rooms.get(roomId);
-        if (!room) return socket.emit('error-msg', '房間無效。');
+        let room = rooms.get(roomId);
+        if (!room) {
+            const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
+            room = { members: [], namePool: shuffled, lastActive: Date.now(), gridState: {} };
+            rooms.set(roomId, room);
+        }
         let member = room.members.find(m => m.uid === uid);
         if (member) member.id = socket.id;
         else if (room.members.length < 4) {
@@ -412,4 +425,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('RJ Tool v1.0.9 Ready.'));
+server.listen(3000, () => console.log('RJ Tool v1.1.4 Ready.'));
