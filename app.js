@@ -7,12 +7,23 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // --- 核心配置 ---
-const ROOM_EXPIRY_MS = 1800000;  
-const COUNTDOWN_SECONDS = 60;    
+const ROOM_EXPIRY_MS = 600000;  // 10 分鐘 (10 * 60 * 1000)
 const MAX_ROOMS = 1000;
-const ANIMAL_NAMES = ['小豬', '小狗', '小貓', '小兔', '小牛', '小羊', '小雞', '小人', '小蛇', '小龍', '小鬼'];
+const ANIMAL_NAMES = ['小豬', '阿狗', '阿貓', '兔兔', '牛牛', '老羊', '小雞', '小蛇', '龍哥', '小鬼'];
 
 const rooms = new Map();
+
+// --- 房間自動清理排程 (每 1 分鐘檢查一次) ---
+setInterval(() => {
+    const now = Date.now();
+    rooms.forEach((room, roomId) => {
+        if (now - room.lastActive > ROOM_EXPIRY_MS) {
+            // 通知房間內所有人
+            io.to(roomId).emit('error-msg', '房間因 10 分鐘無動作已解散。');
+            rooms.delete(roomId);
+        }
+    });
+}, 60000); 
 
 app.get('/api/stats', (req, res) => { 
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -74,7 +85,7 @@ app.get('/', (req, res) => {
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.1.4 | 最後更新: 2026-03-22 21:20</div>
+            <div class="version-info">v1.1.5 | 最後更新: 2026-03-22 21:25</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
         <div id="room-view" class="hidden">
@@ -120,7 +131,6 @@ app.get('/', (req, res) => {
 
         window.onload = () => {
             getStats();
-            // 修正：補回從 URLSearchParams 讀取 room 的變數定義
             const targetRoom = new URLSearchParams(location.search).get('room');
             if (targetRoom) { 
                 currentRoomId = targetRoom.toUpperCase(); 
@@ -181,7 +191,7 @@ app.get('/', (req, res) => {
         function copyTextSilently(val) { if (val && val !== "0000000000" && navigator.clipboard) navigator.clipboard.writeText(val); }
 
         function setupSocketListeners() {
-            socket.on('connect_error', () => { hideLoader(); showToast("伺服器維護中"); });
+            socket.on('connect_error', () => { hideLoader(); showToast("無法連線"); });
             socket.on('disconnect', () => { hideLoader(); showBackupModal('連線已中斷。', lastValidCode); });
             socket.on('room-joined', d => {
                 hideLoader(); 
@@ -212,7 +222,7 @@ app.get('/', (req, res) => {
             });
             socket.on('error-msg', m => { 
                 hideLoader(); 
-                if (m === '房間無效。') showBackupModal('房間無效。', lastValidCode);
+                if (m === '房間無效。' || m === '房間因 10 分鐘無動作已解散。') showBackupModal(m, lastValidCode);
                 else showConfirmModal(m, [{ text: '確定', callback: () => location.href='/' }]); 
             });
             socket.on('grid-reset-sync', () => { globalGridData = {}; lastValidCode = "0000000000"; if (document.getElementById('live-code')) document.getElementById('live-code').innerText = "0000000000"; renderGrid(); });
@@ -384,18 +394,23 @@ io.on('connection', (socket) => {
     socket.on('join-room', (data = {}) => {
         const { roomId, uid } = data;
         let room = rooms.get(roomId);
+        
+        // 若伺服器剛重啟，房間不存在，則自動以此 ID 重建
         if (!room) {
             const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
             room = { members: [], namePool: shuffled, lastActive: Date.now(), gridState: {} };
             rooms.set(roomId, room);
         }
+
         let member = room.members.find(m => m.uid === uid);
-        if (member) member.id = socket.id;
-        else if (room.members.length < 4) {
+        if (member) {
+            member.id = socket.id;
+        } else if (room.members.length < 4) {
             const assignedName = room.namePool.find(n => !room.members.map(m=>m.name).includes(n));
             member = { id: socket.id, uid: uid || Math.random().toString(36).substring(2, 15), name: assignedName };
             room.members.push(member);
         } else return socket.emit('error-msg', '房間已滿。');
+        
         socket.join(roomId);
         socket.emit('room-joined', { roomId, identityName: member.name, gridState: room.gridState, uid: member.uid });
         io.to(roomId).emit('update-members', room.members.map(m => m.name));
@@ -425,4 +440,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('RJ Tool v1.1.4 Ready.'));
+server.listen(3000, () => console.log('RJ Tool v1.1.5 Online.'));
