@@ -38,11 +38,9 @@ app.get('/', (req, res) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>羅密歐與茱麗葉小助手</title>
     <meta name="description" content="我會長敢吃屎, 你們的敢嗎?">
-    
     <meta property="og:title" content="羅密歐與茱麗葉小助手">
     <meta property="og:description" content="我會長敢吃屎, 你們的敢嗎?">
     <meta property="og:type" content="website">
-
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --my-green: #28a745; --other-red: #dc3545; --accent: #f9d000; }
         html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; }
@@ -71,37 +69,63 @@ app.get('/', (req, res) => {
         .fixed-footer { color: var(--accent); font-size: 11px; font-weight: bold; text-align: center; padding: 5px 0 15px 0; user-select: none; }
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 5000; backdrop-filter: blur(8px); }
         .modal-card { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 25px; border: 1px solid #444; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
-        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 8px 20px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 6000; font-size: 14px; font-weight: bold; pointer-events: none; }
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 8px 20px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 9999; font-size: 14px; font-weight: bold; pointer-events: none; }
         .version-info { font-size: 10px; color: #555; margin-top: 10px; }
         .copy-hint { color: var(--other-red); font-size: 0.75em; display: block; margin-top: 8px; font-weight: bold; }
         .record-input { background: #000; border: 1px solid #555; color: var(--accent); width: 100%; padding: 12px; border-radius: 8px; font-size: 1.5em; text-align: center; letter-spacing: 5px; margin-bottom: 10px; outline: none; }
+        
+        .room-input { background: #000; border: 1px solid #444; color: var(--accent); width: 85%; padding: 12px; border-radius: 8px; font-size: 1.3em; text-align: center; margin: 5px auto; outline: none; display: block; letter-spacing: 2px; }
+        .room-input:focus { border-color: var(--my-green); }
+        
+        .small-btn { padding: 8px 5px; font-size: 0.85em; background: #333; color: #ccc; border-radius: 6px; border: 1px solid #444; flex: 1; cursor: pointer; }
+        .small-btn:active { background: #444; }
+
+        .edit-label { font-size: 0.75em; color: #666; margin-bottom: 5px; display: block; }
+        .blink { animation: blinker 1.5s linear infinite; color: var(--my-green); font-weight: bold; }
+        @keyframes blinker { 50% { opacity: 0.3; } }
     </style>
 </head>
 <body oncontextmenu="return false;">
     <div id="loader"><div class="spinner"></div><div id="loader-text" style="font-size: 0.9em; color: #666;">載入中...</div></div>
     <div class="mobile-container">
         <div id="home-view" class="card hidden" style="margin-top: 5vh;">
-            <h1 style="color:var(--my-green); font-size: 1.6em;">RJ 小助手</h1>
-            <p style="font-size: 0.9em; color: #666;">運作房間: <span id="room-count">...</span> / 1000</p>
-            <button onclick="initAction('create')">開始使用</button>
-            <div style="text-align:left; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:15px; border:1px solid #2a2a2a;">
+            <h1 style="color:var(--my-green); font-size: 1.6em; margin-bottom: 10px;">RJ 小助手</h1>
+            <p style="font-size: 0.8em; color: #666; margin-bottom: 20px;">運作房間: <span id="room-count">...</span> / 1000</p>
+            
+            <span class="edit-label">▼ <span class="blink">自訂房號</span> (6-10字)</span>
+            <input type="text" id="manual-room-id" class="room-input" maxlength="10" placeholder="輸入自訂房號" onfocus="this.select()">
+            <button onclick="handleManualAction()" style="margin-top: 10px; width: 90%;">建立 / 加入房間</button>
+            
+            <div style="text-align:left; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:20px; border:1px solid #2a2a2a;">
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 左鍵：標記正確格子 / 錯誤格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵：取消自己格子 (手機長按)</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.1.7 | 最後更新: 2026-03-23 02:10</div>
+            <div class="version-info">v1.2.0 | 最後更新: 2026-03-23 02:40</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
+
         <div id="room-view" class="hidden">
-            <div class="card" style="padding: 10px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.85em; color:#888; align-items: center;">
-                    <div style="text-align:left">房號: <b id="display-room-id" style="color:#eee"></b><br>人數: <b id="online-count-display" style="color:var(--accent)">0/4</b></div>
-                    <div style="text-align:right">你是 <b id="my-name-display" style="color:var(--my-green)"></b></div>
+            <div class="card" style="padding: 15px 10px;">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.8em; color: #666; margin-bottom: 4px;">房號</div>
+                    <div id="display-room-id" style="font-size: 1.6em; color: var(--accent); font-weight: bold; font-family: monospace; letter-spacing: 2px;"></div>
                 </div>
-                <div id="share-link-text" style="font-size:0.75em; color:var(--my-green); border:1px solid #333; padding:8px; border-radius:6px; background:#000; margin-top:8px; cursor:pointer" onclick="copyLink()">點擊複製邀請連結</div>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <div class="small-btn" onclick="copyRoomID()">複製房號</div>
+                    <div class="small-btn" onclick="copyLink()">複製連結</div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; font-size:0.8em; color:#888; border-top: 1px solid #333; padding-top: 10px;">
+                    <div>你是 <b id="my-name-display" style="color:var(--my-green)"></b></div>
+                    <div>人數 <b id="online-count-display" style="color:var(--accent)">0/4</b></div>
+                </div>
             </div>
+
             <div class="grid-container" id="grid"></div>
+            
             <div class="control-panel">
                 <div class="code-display-box" onclick="copyMyCode()">
                     <span id="live-code" class="code-text">0000000000</span>
@@ -109,9 +133,9 @@ app.get('/', (req, res) => {
                 <div style="display:flex; gap:8px;">
                     <div class="auto-copy-wrap" style="flex:1; justify-content:flex-start;">
                         <input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"> 
-                        <label for="auto-copy-toggle">開啟自動複製</label>
+                        <label for="auto-copy-toggle" style="margin-left: 5px; font-size: 0.9em;">開啟自動複製</label>
                     </div>
-                    <button type="button" style="padding:8px 15px; font-size:0.85em; background:#444;" onclick="askLoadRecord()">載入紀錄</button>
+                    <button type="button" style="padding:8px 12px; font-size:0.85em; background:#444;" onclick="askLoadRecord()">載入紀錄</button>
                 </div>
             </div>
             <div class="btn-group">
@@ -121,6 +145,7 @@ app.get('/', (req, res) => {
             <div class="fixed-footer">Made by CC</div>
         </div>
     </div>
+
     <div id="modal-overlay">
         <div class="modal-card">
             <div id="modal-content" style="margin-bottom:25px; line-height:1.6; font-size:1.1em; color:#fff; cursor:pointer;"></div>
@@ -128,6 +153,7 @@ app.get('/', (req, res) => {
         </div>
     </div>
     <div id="toast">已複製</div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let socket, currentRoomId = '', myName = '', globalGridData = {};
@@ -135,10 +161,21 @@ app.get('/', (req, res) => {
 
         window.onload = () => {
             getStats();
+            // 預設產生 10 字房號
+            const randomID = Math.random().toString(36).substring(2, 12).toUpperCase();
+            const input = document.getElementById('manual-room-id');
+            if(input) input.value = randomID;
+
             const targetRoom = new URLSearchParams(location.search).get('room');
             if (targetRoom) { currentRoomId = targetRoom.toUpperCase(); initAction('join', targetRoom); }
             else { hideLoader(); document.getElementById('home-view').classList.remove('hidden'); }
         };
+
+        function handleManualAction() {
+            const val = document.getElementById('manual-room-id').value.trim().toUpperCase();
+            if (val.length < 6 || val.length > 10) { alert('房號長度需為 6-10 字元'); return; }
+            currentRoomId = val; initAction('join', val);
+        }
 
         function hideLoader() { const l = document.getElementById('loader'); if(l) { l.style.opacity='0'; setTimeout(()=>l.classList.add('hidden'), 300); } }
         function showLoader(msg = "載入中...") { 
@@ -150,14 +187,13 @@ app.get('/', (req, res) => {
         function getStats() { fetch('/api/stats?t=' + Date.now()).then(res => res.json()).then(data => { document.getElementById('room-count').innerText = data.count; }).catch(()=>{}); }
 
         function initAction(type, roomID = null, autoRestore = false) {
-            showLoader(type === 'join' ? "連線中..." : "載入中...");
+            showLoader("連線中...");
             if (socket) { socket.disconnect(); socket = null; } 
             socket = io({ reconnection: false, timeout: 5000 });
             if (autoRestore) pendingRestoreCode = lastValidCode;
             setupSocketListeners();
             const rId = (roomID || currentRoomId).toUpperCase();
-            if (type === 'create') socket.emit('create-room', { uid: sessionStorage.getItem('rj_uid') });
-            else socket.emit('join-room', { roomId: rId, uid: sessionStorage.getItem('rj_uid') });
+            socket.emit('join-room', { roomId: rId, uid: sessionStorage.getItem('rj_uid') });
             setTimeout(hideLoader, 5000);
         }
 
@@ -178,13 +214,19 @@ app.get('/', (req, res) => {
         }
 
         function copyMyCode() { copyText(lastValidCode); }
+        function copyRoomID() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentRoomId).then(() => showToast("已複製房號: " + currentRoomId));
+            }
+        }
+
         function copyText(val) {
             if (!val || val === "0000000000") return;
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(val).then(() => showToast("已複製: " + val));
+                navigator.clipboard.writeText(val).then(() => showToast("已複製代碼"));
             } else {
                 const ta = document.createElement("textarea"); ta.value = val; ta.style.position = "fixed"; ta.style.left = "-9999px";
-                document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("已複製: " + val); } catch (e) {} document.body.removeChild(ta);
+                document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("已複製代碼"); } catch (e) {} document.body.removeChild(ta);
             }
         }
         function copyTextSilently(val) { if (val && val !== "0000000000" && navigator.clipboard) navigator.clipboard.writeText(val); }
@@ -202,8 +244,7 @@ app.get('/', (req, res) => {
                 window.history.replaceState({}, '', '?room=' + d.roomId);
                 globalGridData = d.gridState || {}; renderGrid(); updateMyGreenCode();
                 if (pendingRestoreCode) {
-                    const code = pendingRestoreCode;
-                    pendingRestoreCode = null;
+                    const code = pendingRestoreCode; pendingRestoreCode = null;
                     setTimeout(() => processLoadRecord(code), 300);
                 }
                 document.getElementById('modal-overlay').style.display = 'none';
@@ -216,7 +257,8 @@ app.get('/', (req, res) => {
             });
             socket.on('update-members', (list) => {
                 sessionStorage.setItem('rj_members', JSON.stringify(list));
-                document.getElementById('online-count-display').innerText = list.length + '/4';
+                const el = document.getElementById('online-count-display');
+                if(el) el.innerText = list.length + '/4';
                 renderGrid();
             });
             socket.on('error-msg', m => { 
@@ -311,33 +353,24 @@ app.get('/', (req, res) => {
                         else if (states[n] === 2) { if (playerPot[n]) playerPot[n] = playerPot[n].filter(v => v !== c); if (n == myName) myWrongs.push(c); }
                     });
                 }
-                
-                // --- 高階推論：排除法推算 ---
                 let changed = true;
                 while (changed) {
                     changed = false;
-                    // 1. 檢查每個玩家「唯一能去的位置」 (這部分維持原樣)
                     members.forEach(n => {
                         if (!Object.values(finalOk).includes(n)) {
                             let avail = (playerPot[n] || []).filter(col => !finalOk[col]);
                             if (avail.length === 1) { finalOk[avail[0]] = n; changed = true; }
                         }
                     });
-
-                    // 2. 檢查每個位置「唯一能容納的人」 (修正點：增加滿 4 人判定)
-                    if (members.length === 4) { // <--- 加入這行
+                    if (members.length === 4) {
                         for (let c = 1; c <= 4; c++) {
                             if (!finalOk[c]) {
                                 let possiblePlayers = members.filter(n => !Object.values(finalOk).includes(n) && playerPot[n].includes(c));
-                                if (possiblePlayers.length === 1) { 
-                                    finalOk[c] = possiblePlayers[0]; 
-                                    changed = true; 
-                                }
+                                if (possiblePlayers.length === 1) { finalOk[c] = possiblePlayers[0]; changed = true; }
                             }
                         }
                     }
                 }
-
                 for (let c = 1; c <= 4; c++) {
                     const cell = document.getElementById('r'+r+'c'+c);
                     const probDiv = cell.querySelector('.prob');
@@ -347,24 +380,15 @@ app.get('/', (req, res) => {
                         if (states[n] === 1) { cell.classList.add(n == myName ? 'mine-ok' : 'others-ok'); cell.querySelector('.val').innerText = n.substring(1); }
                         else if (n == myName && states[n] === 2) { cell.classList.add('mine-wrong'); cell.querySelector('.val').innerText = 'X'; }
                     });
-
                     if (Object.keys(states).some(n => states[n] === 1 || (n == myName && states[n] === 2))) { 
                         probDiv.innerText = ''; 
                     } else {
                         let pVal = 0;
                         const occupier = finalOk[c];
                         const myConfirmedCol = Object.keys(finalOk).find(k => finalOk[k] === myName);
-                        
-                        // 判定：如果該格確定是某人(包含自己)，或是自己已經確定在別格
-                        if (occupier === myName || myConfirmedCol == c) {
-                            pVal = (myConfirmedCol == c || occupier === myName) ? 100 : 0;
-                        } else if (occupier || myConfirmedCol || myWrongs.includes(c)) {
-                            pVal = 0;
-                        } else { 
-                            let rem = (playerPot[myName] || []).filter(col => !finalOk[col]); 
-                            if (rem.includes(c)) pVal = Math.floor(100 / (rem.length || 1)); else pVal = 0; 
-                        }
-                        
+                        if (occupier === myName || myConfirmedCol == c) pVal = (myConfirmedCol == c || occupier === myName) ? 100 : 0;
+                        else if (occupier || myConfirmedCol || myWrongs.includes(c)) pVal = 0;
+                        else { let rem = (playerPot[myName] || []).filter(col => !finalOk[col]); if (rem.includes(c)) pVal = Math.floor(100 / (rem.length || 1)); else pVal = 0; }
                         probDiv.innerText = pVal + '%';
                         if (pVal === 100) { probDiv.style.fontSize = '85%'; probDiv.style.color = 'var(--accent)'; }
                         else if (pVal === 0) { probDiv.style.fontSize = '30%'; probDiv.style.color = '#444'; }
@@ -397,7 +421,7 @@ app.get('/', (req, res) => {
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
         function copyLink() {
             const url = location.origin + '/?room=' + currentRoomId;
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => showToast("已複製邀請連結"));
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => showToast("已複製連結"));
         }
     </script>
 </body>
@@ -407,32 +431,26 @@ app.get('/', (req, res) => {
 
 // --- Socket 邏輯 ---
 io.on('connection', (socket) => {
-    socket.on('create-room', (data = {}) => {
-        if (rooms.size >= MAX_ROOMS) return socket.emit('error-msg', '目前房間已滿。');
-        const roomId = Math.random().toString(36).substring(2, 10).toUpperCase();
-        const uid = data.uid || Math.random().toString(36).substring(2, 15);
-        const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
-        rooms.set(roomId, { members: [{ id: socket.id, uid, name: shuffled[0] }], namePool: shuffled, lastActive: Date.now(), gridState: {} });
-        socket.join(roomId);
-        socket.emit('room-joined', { roomId, identityName: shuffled[0], gridState: {}, uid });
-        io.to(roomId).emit('update-members', [shuffled[0]]);
-    });
-
     socket.on('join-room', (data = {}) => {
         const { roomId, uid } = data;
+        if (!roomId || roomId.length < 6 || roomId.length > 10) return socket.emit('error-msg', '房號無效 (6-10字)。');
+
         let room = rooms.get(roomId);
         if (!room) {
             const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
             room = { members: [], namePool: shuffled, lastActive: Date.now(), gridState: {} };
             rooms.set(roomId, room);
         }
+
         let member = room.members.find(m => m.uid === uid);
         if (member) member.id = socket.id;
         else if (room.members.length < 4) {
-            const assignedName = room.namePool.find(n => !room.members.map(m=>m.name).includes(n));
+            const activeNames = room.members.map(m => m.name);
+            const assignedName = room.namePool.find(n => !activeNames.includes(n));
             member = { id: socket.id, uid: uid || Math.random().toString(36).substring(2, 15), name: assignedName };
             room.members.push(member);
         } else return socket.emit('error-msg', '房間已滿。');
+        
         socket.join(roomId);
         socket.emit('room-joined', { roomId, identityName: member.name, gridState: room.gridState, uid: member.uid });
         io.to(roomId).emit('update-members', room.members.map(m => m.name));
@@ -462,4 +480,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.1.7 Online.'));
+server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.2.0 Online.'));
