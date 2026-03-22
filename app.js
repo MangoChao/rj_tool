@@ -44,7 +44,16 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Romeo and Juliet Tool</title>
+    
+    <title>Romeo and Juliet - 羅密歐與茱麗葉小助手</title>
+    <meta name="description" content="最專業的 RJ 同步輔助工具，自動推算 100% 佔位與 0% 排除，即時同步隊友狀態。">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://rjtool.couchchao.com/">
+    <meta property="og:title" content="Romeo and Juliet - 羅密歐與茱麗葉小助手">
+    <meta property="og:description" content="【RJ 必備】自動連鎖推論、0% 邏輯排除，讓隊伍效率翻倍！">
+    <meta name="twitter:title" content="Romeo and Juliet - 小助手">
+    <meta name="twitter:description" content="自動同步隊友格子的專業 RJ 工具，內建 100% 邏輯推算。">
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --my-green: #28a745; --other-red: #dc3545; --accent: #f9d000; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
