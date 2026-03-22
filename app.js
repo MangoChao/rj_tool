@@ -32,7 +32,10 @@ setInterval(() => {
     });
 }, 10000);
 
-app.get('/api/stats', (req, res) => { res.json({ count: cachedRoomCount }); });
+app.get('/api/stats', (req, res) => { 
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.json({ count: rooms.size }); 
+});
 
 app.get('/', (req, res) => {
     res.send(`
@@ -141,7 +144,16 @@ app.get('/', (req, res) => {
         }
 
         // --- Socket 與 邏輯部分 (微調加入 hideLoader) ---
-        function getStats() { fetch('/api/stats').then(res => res.json()).then(data => { document.getElementById('room-count').innerText = data.count; }).catch(()=>{}); }
+        function getStats() { 
+            // 加入 ?t=時間戳 確保每次網址都不一樣，CDN 就不會給舊資料
+            fetch('/api/stats?t=' + Date.now())
+                .then(res => res.json())
+                .then(data => { 
+                    const countSpan = document.getElementById('room-count');
+                    if (countSpan) countSpan.innerText = data.count; 
+                })
+                .catch(()=>{}); 
+        }
 
         function initAction(type, roomID = null) {
             if (!socket) { socket = io(); setupSocketListeners(); }
