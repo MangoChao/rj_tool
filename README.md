@@ -1,2 +1,3 @@
-# rj_tool
-artale Romeo and Juliet tool
+作者CC
+gemini製作
+預計1000組連線
