@@ -85,7 +85,7 @@ app.get('/', (req, res) => {
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.1.5 | 最後更新: 2026-03-22 21:25</div>
+            <div class="version-info">v1.1.5 | 最後更新: 2026-03-22 21:15</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
         <div id="room-view" class="hidden">
