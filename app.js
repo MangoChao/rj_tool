@@ -59,7 +59,14 @@ app.get('/', (req, res) => {
         .modal-card { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 25px; border: 1px solid #444; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 8px 20px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 6000; font-size: 14px; font-weight: bold; pointer-events: none; }
         .version-info { font-size: 10px; color: #555; margin-top: 10px; }
-        .copy-hint { color: var(--other-red); font-size: 0.75em; display: block; margin-top: 8px; font-weight: bold; }
+        .record-input { background: #000; border: 1px solid #555; color: var(--accent); width: 100%; padding: 12px; border-radius: 8px; font-size: 1.5em; text-align: center; letter-spacing: 5px; margin-bottom: 10px; outline: none; }
+        .copy-hint { 
+            color: var(--other-red); 
+            font-size: 0.75em; 
+            display: block; 
+            margin-top: 8px; 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -76,7 +83,7 @@ app.get('/', (req, res) => {
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
                 <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.0.7 | 最後更新: 2026-03-22 20:33</div>
+            <div class="version-info">v1.0.9 | 最後更新: 2026-03-22 20:44</div>
             <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
         </div>
 
@@ -95,9 +102,12 @@ app.get('/', (req, res) => {
                 <div class="code-display-box" onclick="copyMyCode()">
                     <span id="live-code" class="code-text">0000000000</span>
                 </div>
-                <div class="auto-copy-wrap">
-                    <input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"> 
-                    <label for="auto-copy-toggle">開啟自動複製</label>
+                <div style="display:flex; gap:8px;">
+                    <div class="auto-copy-wrap" style="flex:1; justify-content:flex-start;">
+                        <input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"> 
+                        <label for="auto-copy-toggle">開啟自動複製</label>
+                    </div>
+                    <button type="button" style="padding:8px 15px; font-size:0.85em; background:#444;" onclick="askLoadRecord()">載入紀錄</button>
                 </div>
             </div>
 
@@ -120,14 +130,13 @@ app.get('/', (req, res) => {
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let socket, currentRoom = '', myName = '', globalGridData = {};
-        let lastRightClick = 0, countdownTimer = null;
-        let lastValidCode = "0000000000"; 
+        let lastRightClick = 0, lastValidCode = "0000000000"; 
         const urlParams = new URLSearchParams(location.search);
         const targetRoom = urlParams.get('room');
 
         window.onload = () => {
             getStats();
-            if (targetRoom) { document.getElementById('loader-text').innerText = '正在進入房間...'; initAction('join', targetRoom); }
+            if (targetRoom) initAction('join', targetRoom);
             else { hideLoader(); document.getElementById('home-view').classList.remove('hidden'); }
         };
 
@@ -153,7 +162,7 @@ app.get('/', (req, res) => {
             lastValidCode = code;
             const el = document.getElementById('live-code');
             if (el) el.innerText = code;
-            if (document.getElementById('auto-copy-toggle')?.checked) { copyTextSilently(code); }
+            if (document.getElementById('auto-copy-toggle')?.checked) copyTextSilently(code);
             return code;
         }
 
@@ -169,13 +178,10 @@ app.get('/', (req, res) => {
             }
         }
 
-        function copyTextSilently(val) {
-            if (!val || val === "0000000000") return;
-            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(val); }
-        }
+        function copyTextSilently(val) { if (val && val !== "0000000000" && navigator.clipboard) navigator.clipboard.writeText(val); }
 
         function setupSocketListeners() {
-            socket.on('disconnect', () => { showBackupModal('連線已中斷。', lastValidCode); });
+            socket.on('disconnect', () => showBackupModal('連線已中斷。', lastValidCode));
             socket.on('room-joined', d => {
                 hideLoader(); currentRoom = d.roomId; myName = d.identityName; sessionStorage.setItem('rj_uid', d.uid);
                 document.getElementById('home-view').classList.add('hidden');
@@ -183,15 +189,13 @@ app.get('/', (req, res) => {
                 document.getElementById('display-room-id').innerText = d.roomId;
                 document.getElementById('my-name-display').innerText = d.identityName;
                 window.history.replaceState({}, '', '?room=' + d.roomId);
-                globalGridData = d.gridState || {}; renderGrid();
-                updateMyGreenCode();
+                globalGridData = d.gridState || {}; renderGrid(); updateMyGreenCode();
             });
             socket.on('grid-sync', d => {
                 const key = d.r + '_' + d.c;
                 if (d.name === 'ALL_CLEAR') globalGridData[key] = {};
                 else { if(!globalGridData[key]) globalGridData[key] = {}; if(d.state === 0) delete globalGridData[key][d.name]; else globalGridData[key][d.name] = d.state; }
-                renderGrid();
-                updateMyGreenCode();
+                renderGrid(); updateMyGreenCode();
             });
             socket.on('update-members', (list) => {
                 sessionStorage.setItem('rj_members', JSON.stringify(list));
@@ -209,13 +213,54 @@ app.get('/', (req, res) => {
         function showBackupModal(mainMsg, code) {
             const content = document.getElementById('modal-content');
             const btns = document.getElementById('modal-btns');
-            const overlay = document.getElementById('modal-overlay');
             content.innerHTML = mainMsg + '<br>當前紀錄：' + code + '<br><span class="copy-hint">點擊複製</span>';
             content.onclick = () => copyText(code);
             btns.innerHTML = '';
             const b = document.createElement('button'); b.type = 'button'; b.innerText = '回到首頁';
             b.onclick = () => location.href='/'; btns.appendChild(b);
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function askLoadRecord() {
+            const content = document.getElementById('modal-content');
+            const btns = document.getElementById('modal-btns');
+            const overlay = document.getElementById('modal-overlay');
+            content.innerHTML = '<div style="font-size:0.9em; margin-bottom:10px;">請輸入紀錄數字</div>' +
+                               '<input type="tel" id="load-record-input" class="record-input" maxlength="10" placeholder="0000000000">';
+            content.onclick = null;
+            btns.innerHTML = '';
+            const cancelBtn = document.createElement('button'); cancelBtn.className = 'btn-danger'; cancelBtn.innerText = '取消';
+            cancelBtn.onclick = () => overlay.style.display = 'none';
+            const confirmBtn = document.createElement('button'); confirmBtn.innerText = '確認載入';
+            confirmBtn.onclick = () => {
+                let inputVal = document.getElementById('load-record-input').value;
+                if (!/^\\d+$/.test(inputVal)) { alert('請輸入數字'); return; }
+                inputVal = inputVal.padEnd(10, '0'); // 自動補 0
+                processLoadRecord(inputVal);
+                overlay.style.display = 'none';
+            };
+            btns.appendChild(cancelBtn); btns.appendChild(confirmBtn);
             overlay.style.display = 'flex';
+            setTimeout(() => document.getElementById('load-record-input').focus(), 100);
+        }
+
+        function processLoadRecord(code) {
+            const digits = code.split('');
+            for (let r = 1; r <= 10; r++) {
+                for (let c = 1; c <= 4; c++) {
+                    const key = r + '_' + c;
+                    if (globalGridData[key] && globalGridData[key][myName] === 1) syncAction(r, c, 0);
+                }
+            }
+            digits.forEach((digit, index) => {
+                const r = index + 1;
+                const targetCol = parseInt(digit);
+                if (targetCol >= 1 && targetCol <= 4) {
+                    const key = r + '_' + targetCol;
+                    if (!Object.keys(globalGridData[key] || {}).some(n => n !== myName && globalGridData[key][n] === 1)) syncAction(r, targetCol, 1);
+                }
+            });
+            showToast("紀錄載入完成");
         }
 
         const grid = document.getElementById('grid');
@@ -306,8 +351,7 @@ app.get('/', (req, res) => {
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
         function copyLink() {
             const url = location.origin + '/?room=' + currentRoom;
-            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(() => showToast("已複製邀請連結")); }
-            else { const ta = document.createElement("textarea"); ta.value = url; ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("已複製邀請連結"); } catch (e) {} document.body.removeChild(ta); }
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => showToast("已複製邀請連結"));
         }
     </script>
 </body>
@@ -315,7 +359,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- Socket 邏輯 ---
+// --- Socket 邏輯 (維持不變) ---
 io.on('connection', (socket) => {
     socket.on('create-room', (data = {}) => {
         if (rooms.size >= MAX_ROOMS) return socket.emit('error-msg', '目前房間已滿。');
@@ -335,8 +379,7 @@ io.on('connection', (socket) => {
         let member = room.members.find(m => m.uid === uid);
         if (member) member.id = socket.id;
         else if (room.members.length < 4) {
-            const activeNames = room.members.map(m => m.name);
-            const assignedName = room.namePool.find(n => !activeNames.includes(n));
+            const assignedName = room.namePool.find(n => !room.members.map(m=>m.name).includes(n));
             member = { id: socket.id, uid: uid || Math.random().toString(36).substring(2, 15), name: assignedName };
             room.members.push(member);
         } else return socket.emit('error-msg', '房間已滿。');
@@ -369,4 +412,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('RJ Tool v1.0.7 Ready.'));
+server.listen(3000, () => console.log('RJ Tool v1.0.9 Ready.'));
