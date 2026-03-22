@@ -37,10 +37,10 @@ app.get('/', (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>羅密歐與茱麗葉小助手</title>
-    <meta name="description" content="我們會長敢吃屎, 你們的敢嗎?">
+    <meta name="description" content="我會長敢吃屎, 你們的敢嗎?">
     
     <meta property="og:title" content="羅密歐與茱麗葉小助手">
-    <meta property="og:description" content="我們會長敢吃屎, 你們的敢嗎?">
+    <meta property="og:description" content="我會長敢吃屎, 你們的敢嗎?">
     <meta property="og:type" content="website">
 
     <style>
