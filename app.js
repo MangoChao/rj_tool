@@ -13,7 +13,6 @@ const ANIMAL_NAMES = ['小豬', '阿狗', '阿貓', '兔兔', '牛牛', '老羊'
 
 const rooms = new Map();
 
-// --- 房間自動清理排程 (每 1 分鐘檢查一次) ---
 setInterval(() => {
     const now = Date.now();
     rooms.forEach((room, roomId) => {
@@ -37,7 +36,13 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Romeo and Juliet - 羅密歐與茱麗葉小助手</title>
+    <title>羅密歐與茱麗葉小助手</title>
+    <meta name="description" content="我們會長敢吃屎, 你們的敢嗎?">
+    
+    <meta property="og:title" content="羅密歐與茱麗葉小助手">
+    <meta property="og:description" content="我們會長敢吃屎, 你們的敢嗎?">
+    <meta property="og:type" content="website">
+
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --my-green: #28a745; --other-red: #dc3545; --accent: #f9d000; }
         html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; }
@@ -76,7 +81,7 @@ app.get('/', (req, res) => {
     <div id="loader"><div class="spinner"></div><div id="loader-text" style="font-size: 0.9em; color: #666;">載入中...</div></div>
     <div class="mobile-container">
         <div id="home-view" class="card hidden" style="margin-top: 5vh;">
-            <h1 style="color:var(--my-green); font-size: 1.6em;">Romeo and Juliet Tool</h1>
+            <h1 style="color:var(--my-green); font-size: 1.6em;">RJ 小助手</h1>
             <p style="font-size: 0.9em; color: #666;">運作房間: <span id="room-count">...</span> / 1000</p>
             <button onclick="initAction('create')">開始使用</button>
             <div style="text-align:left; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:15px; border:1px solid #2a2a2a;">
