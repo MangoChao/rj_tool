@@ -226,30 +226,95 @@ app.get('/', (req, res) => {
         function renderGrid() {
             const members = JSON.parse(sessionStorage.getItem('rj_members') || '[]');
             for (let r = 1; r <= 10; r++) {
-                let finalOk = {}, myWrongs = [], playerPot = {}; members.forEach(n => playerPot[n] = [1,2,3,4]);
+                let finalOk = {}; 
+                let playerPot = {}; 
+                let myWrongs = [];
+
+                members.forEach(n => playerPot[n] = [1, 2, 3, 4]);
+
                 for (let c = 1; c <= 4; c++) {
-                    const states = globalGridData[r+'_'+c] || {}; const cell = document.getElementById('r'+r+'c'+c); cell.className = 'cell'; cell.querySelector('.val').innerText = '';
+                    const states = globalGridData[r + '_' + c] || {};
                     Object.keys(states).forEach(n => {
-                        const s = states[n];
-                        if (s === 1) { finalOk[c] = n; cell.classList.add(n == myName ? 'mine-ok' : 'others-ok'); cell.querySelector('.val').innerText = n.substring(1); }
-                        else if (s === 2) { if(playerPot[n]) playerPot[n] = playerPot[n].filter(v => v !== c); if (n == myName) { cell.classList.add('mine-wrong'); cell.querySelector('.val').innerText = 'X'; myWrongs.push(c); } }
+                        if (states[n] === 1) finalOk[c] = n;
+                        else if (states[n] === 2) {
+                            playerPot[n] = playerPot[n].filter(v => v !== c);
+                            if (n == myName) myWrongs.push(c);
+                        }
                     });
                 }
-                members.forEach(n => { if (!Object.values(finalOk).includes(n)) { let avail = playerPot[n].filter(col => !finalOk[col] || finalOk[col] == n); if (avail.length === 1) finalOk[avail[0]] = n; } });
+
+                let changed = true;
+                while (changed) {
+                    changed = false;
+                    members.forEach(n => {
+                        if (!Object.values(finalOk).includes(n)) {
+                            let avail = (playerPot[n] || []).filter(col => !finalOk[col]);
+                            if (avail.length === 1) {
+                                finalOk[avail[0]] = n; 
+                                changed = true;
+                            }
+                        }
+                    });
+                }
+
                 for (let c = 1; c <= 4; c++) {
-                    const probDiv = document.getElementById('r'+r+'c'+c).querySelector('.prob');
-                    const states = globalGridData[r+'_'+c] || {};
+                    const cell = document.getElementById('r' + r + 'c' + c);
+                    const probDiv = cell.querySelector('.prob');
+                    const states = globalGridData[r + '_' + c] || {};
+                    
+                    cell.className = 'cell';
+                    cell.querySelector('.val').innerText = '';
+
+                    Object.keys(states).forEach(n => {
+                        if (states[n] === 1) {
+                            cell.classList.add(n == myName ? 'mine-ok' : 'others-ok');
+                            cell.querySelector('.val').innerText = n.substring(1);
+                        } else if (states[n] === 2 && n == myName) {
+                            cell.classList.add('mine-wrong');
+                            cell.querySelector('.val').innerText = 'X';
+                        }
+                    });
+
                     const hasMark = Object.keys(states).some(n => states[n] === 1 || (n == myName && states[n] === 2));
-                    if (hasMark) { probDiv.innerText = ''; } else {
+                    if (hasMark) {
+                        probDiv.innerText = '';
+                    } else {
                         let pVal = 0;
-                        if (finalOk[c] == myName) pVal = 100;
-                        else if (Object.values(finalOk).includes(myName) || finalOk[c] || myWrongs.includes(c)) pVal = 0;
-                        else { let rem = (playerPot[myName] || [1,2,3,4]).filter(col => !finalOk[col]); pVal = Math.floor(100 / (rem.length || 1)); }
-                        if (pVal > 0) {
-                            probDiv.innerText = pVal + '%'; let fontSize = (pVal === 100) ? 85 : 35 + (pVal - 25) * 0.8;
-                            probDiv.style.fontSize = fontSize + '%';
-                            if (pVal === 100) { probDiv.style.color = 'var(--accent)'; } else { let ratio = (pVal-25)/75; if(ratio<0) ratio=0; let rd = Math.floor(102 + 147 * ratio), gd = Math.floor(102 + 106 * ratio), bd = Math.floor(102 - 102 * ratio); probDiv.style.color = \`rgb(\${rd},\${gd},\${bd})\`; }
-                        } else probDiv.innerText = '';
+                        const occupier = finalOk[c];
+                        const myConfirmedCol = Object.keys(finalOk).find(k => finalOk[k] === myName);
+
+                        if (occupier === myName || myConfirmedCol == c) {
+                            pVal = (myConfirmedCol == c || occupier === myName) ? 100 : 0;
+                        } else if (occupier || myConfirmedCol || myWrongs.includes(c)) {
+                            pVal = 0;
+                        } else {
+                            let myRem = (playerPot[myName] || []).filter(col => !finalOk[col]);
+                            if (myRem.includes(c)) {
+                                pVal = Math.floor(100 / (myRem.length || 1));
+                            } else {
+                                pVal = 0;
+                            }
+                        }
+
+                        // --- 修改處：強制顯示數字 ---
+                        probDiv.innerText = pVal + '%'; 
+                        
+                        if (pVal === 100) {
+                            probDiv.style.fontSize = '85%';
+                            probDiv.style.color = 'var(--accent)';
+                        } else if (pVal === 0) {
+                            probDiv.style.fontSize = '30%'; // 0% 縮小一點避免干擾
+                            probDiv.style.color = '#444';    // 深灰色，代表已排除
+                        } else {
+                            let fs = 35 + (pVal - 25) * 0.8;
+                            probDiv.style.fontSize = fs + '%';
+                            let ratio = (pVal - 25) / 75;
+                            if (ratio < 0) ratio = 0;
+                            let rv = Math.floor(102 + 147 * ratio);
+                            let gv = Math.floor(102 + 106 * ratio);
+                            let bv = Math.floor(102 - 102 * ratio);
+                            probDiv.style.color = 'rgb(' + rv + ',' + gv + ',' + bv + ')';
+                        }
                     }
                 }
             }
