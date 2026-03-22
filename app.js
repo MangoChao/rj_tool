@@ -66,21 +66,25 @@ app.get('/', (req, res) => {
         .btn-group { display: flex; gap: 8px; padding-bottom: 20px; position: relative; z-index: 10; }
         button { flex: 1; padding: 15px; font-size: 1em; font-weight: bold; border: none; border-radius: 8px; background: var(--my-green); color: white; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .btn-danger { background: #333; color: #999; }
-        .fixed-footer { color: var(--accent); font-size: 11px; font-weight: bold; text-align: center; padding: 5px 0 15px 0; user-select: none; }
+        
+        .fixed-footer { color: var(--accent); font-size: 14px; font-weight: bold; text-align: center; padding: 5px 0 15px 0; user-select: none; }
+        .version-info { font-size: 12px; color: #555; margin-top: 10px; }
+        
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 5000; backdrop-filter: blur(8px); }
         .modal-card { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 25px; border: 1px solid #444; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; }
-        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 8px 20px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 9999; font-size: 14px; font-weight: bold; pointer-events: none; }
-        .version-info { font-size: 10px; color: #555; margin-top: 10px; }
-        .copy-hint { color: var(--other-red); font-size: 0.75em; display: block; margin-top: 8px; font-weight: bold; }
-        .record-input { background: #000; border: 1px solid #555; color: var(--accent); width: 100%; padding: 12px; border-radius: 8px; font-size: 1.5em; text-align: center; letter-spacing: 5px; margin-bottom: 10px; outline: none; }
         
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--my-green); color: white; padding: 10px 25px; border-radius: 25px; opacity: 0; transition: 0.3s; z-index: 9999; font-size: 14px; font-weight: bold; pointer-events: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        #toast.error { background: var(--other-red); }
+
+        .record-input { background: #000; border: 1px solid #555; color: var(--accent); width: 100%; padding: 12px; border-radius: 8px; font-size: 1.5em; text-align: center; letter-spacing: 5px; margin-bottom: 10px; outline: none; }
         .room-input { background: #000; border: 1px solid #444; color: var(--accent); width: 85%; padding: 12px; border-radius: 8px; font-size: 1.3em; text-align: center; margin: 5px auto; outline: none; display: block; letter-spacing: 2px; }
         .room-input:focus { border-color: var(--my-green); }
         
-        .small-btn { padding: 8px 5px; font-size: 0.85em; background: #333; color: #ccc; border-radius: 6px; border: 1px solid #444; flex: 1; cursor: pointer; }
+        .small-btn { padding: 6px 5px; font-size: 0.9em; background: #333; color: #ccc; border-radius: 6px; border: 1px solid #444; flex: 1; cursor: pointer; font-weight: bold; }
         .small-btn:active { background: #444; }
 
-        .edit-label { font-size: 0.75em; color: #666; margin-bottom: 5px; display: block; }
+        .manual-text { color:#aaa; font-size:1em; margin: 8px 0; line-height: 1.4; }
+        .edit-label { font-size: 0.85em; color: #666; margin-bottom: 5px; display: block; }
         .blink { animation: blinker 1.5s linear infinite; color: var(--my-green); font-weight: bold; }
         @keyframes blinker { 50% { opacity: 0.3; } }
     </style>
@@ -89,38 +93,38 @@ app.get('/', (req, res) => {
     <div id="loader"><div class="spinner"></div><div id="loader-text" style="font-size: 0.9em; color: #666;">載入中...</div></div>
     <div class="mobile-container">
         <div id="home-view" class="card hidden" style="margin-top: 5vh;">
-            <h1 style="color:var(--my-green); font-size: 1.6em; margin-bottom: 10px;">RJ 小助手</h1>
-            <p style="font-size: 0.8em; color: #666; margin-bottom: 20px;">運作房間: <span id="room-count">...</span> / 1000</p>
+            <h1 style="color:var(--my-green); font-size: 1.8em; margin-bottom: 10px;">RJ 小助手</h1>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">運作房間: <span id="room-count">...</span> / 1000</p>
             
-            <span class="edit-label">▼ <span class="blink">自訂房號</span> (6-10字)</span>
+            <span class="edit-label">▼ <span class="blink">自訂房號</span> (英數字 6-10字)</span>
             <input type="text" id="manual-room-id" class="room-input" maxlength="10" placeholder="輸入自訂房號" onfocus="this.select()">
-            <button onclick="handleManualAction()" style="margin-top: 10px; width: 90%;">建立 / 加入房間</button>
+            <button onclick="handleManualAction()" style="margin-top: 10px; width: 90%; font-size: 1.1em;">建立 / 加入房間</button>
             
-            <div style="text-align:left; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:20px; border:1px solid #2a2a2a;">
-                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 左鍵：標記正確格子 / 錯誤格子</p>
-                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵：取消自己格子 (手機長按)</p>
-                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 右鍵雙擊：取消別人格子</p>
-                <p style="color:#aaa; font-size:0.85em; margin: 5px 0;">● 自動複製：每次點擊格子都會複製紀錄</p>
+            <div style="text-align:left; background:rgba(255,255,255,0.03); padding:15px; border-radius:8px; margin-top:20px; border:1px solid #2a2a2a;">
+                <p class="manual-text">● 左鍵：標記正確格子 / 錯誤格子</p>
+                <p class="manual-text">● 右鍵：取消自己格子 (手機長按)</p>
+                <p class="manual-text">● 右鍵雙擊：取消別人格子</p>
+                <p class="manual-text">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.2.0 | 最後更新: 2026-03-23 02:40</div>
-            <div class="fixed-footer" style="padding-top: 10px;">Made by CC</div>
+            <div class="version-info">v1.2.3 | 最後更新: 2026-03-23 03:00</div>
+            <div class="fixed-footer" style="padding-top: 15px;">Made by CC</div>
         </div>
 
         <div id="room-view" class="hidden">
-            <div class="card" style="padding: 15px 10px;">
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 0.8em; color: #666; margin-bottom: 4px;">房號</div>
-                    <div id="display-room-id" style="font-size: 1.6em; color: var(--accent); font-weight: bold; font-family: monospace; letter-spacing: 2px;"></div>
+            <div class="card" style="padding: 10px 12px;">
+                <div style="margin-bottom: 8px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 0px;">房號</div>
+                    <div id="display-room-id" style="font-size: 1.8em; color: var(--accent); font-weight: bold; font-family: monospace; letter-spacing: 2px; line-height: 1.2;"></div>
                 </div>
                 
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
                     <div class="small-btn" onclick="copyRoomID()">複製房號</div>
                     <div class="small-btn" onclick="copyLink()">複製連結</div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; font-size:0.8em; color:#888; border-top: 1px solid #333; padding-top: 10px;">
-                    <div>你是 <b id="my-name-display" style="color:var(--my-green)"></b></div>
-                    <div>人數 <b id="online-count-display" style="color:var(--accent)">0/4</b></div>
+                <div style="display:flex; justify-content:space-between; font-size:1em; color:#bbb; border-top: 1px solid #333; padding-top: 10px;">
+                    <div>你是 <b id="my-name-display" style="color:var(--my-green); font-size: 1.1em;"></b></div>
+                    <div>人數 <b id="online-count-display" style="color:var(--accent); font-size: 1.1em;">0/4</b></div>
                 </div>
             </div>
 
@@ -133,9 +137,9 @@ app.get('/', (req, res) => {
                 <div style="display:flex; gap:8px;">
                     <div class="auto-copy-wrap" style="flex:1; justify-content:flex-start;">
                         <input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"> 
-                        <label for="auto-copy-toggle" style="margin-left: 5px; font-size: 0.9em;">開啟自動複製</label>
+                        <label for="auto-copy-toggle" style="margin-left: 8px; font-size: 0.95em;">開啟自動複製</label>
                     </div>
-                    <button type="button" style="padding:8px 12px; font-size:0.85em; background:#444;" onclick="askLoadRecord()">載入紀錄</button>
+                    <button type="button" style="padding:6px 12px; font-size:0.9em; background:#444;" onclick="askLoadRecord()">載入紀錄</button>
                 </div>
             </div>
             <div class="btn-group">
@@ -161,19 +165,26 @@ app.get('/', (req, res) => {
 
         window.onload = () => {
             getStats();
-            // 預設產生 10 字房號
             const randomID = Math.random().toString(36).substring(2, 12).toUpperCase();
             const input = document.getElementById('manual-room-id');
             if(input) input.value = randomID;
-
             const targetRoom = new URLSearchParams(location.search).get('room');
             if (targetRoom) { currentRoomId = targetRoom.toUpperCase(); initAction('join', targetRoom); }
             else { hideLoader(); document.getElementById('home-view').classList.remove('hidden'); }
         };
 
         function handleManualAction() {
-            const val = document.getElementById('manual-room-id').value.trim().toUpperCase();
-            if (val.length < 6 || val.length > 10) { alert('房號長度需為 6-10 字元'); return; }
+            let val = document.getElementById('manual-room-id').value.trim().toUpperCase();
+            
+            // 修正：檢查是否為純英數字
+            if (!/^[A-Z0-9]+$/.test(val)) {
+                showToast("房號只能包含英文字母與數字", true);
+                return;
+            }
+            if (val.length < 6 || val.length > 10) { 
+                showToast("房號長度需為 6-10 字元", true); 
+                return; 
+            }
             currentRoomId = val; initAction('join', val);
         }
 
@@ -216,8 +227,15 @@ app.get('/', (req, res) => {
         function copyMyCode() { copyText(lastValidCode); }
         function copyRoomID() {
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(currentRoomId).then(() => showToast("已複製房號: " + currentRoomId));
+                navigator.clipboard.writeText(currentRoomId).then(() => showToast("已複製房號"));
             }
+        }
+        function showToast(m, isError = false) { 
+            const t = document.getElementById('toast'); 
+            t.innerText = m; 
+            if(isError) t.classList.add('error'); else t.classList.remove('error');
+            t.style.opacity = '1'; 
+            setTimeout(() => t.style.opacity = '0', 2000); 
         }
 
         function copyText(val) {
@@ -232,7 +250,7 @@ app.get('/', (req, res) => {
         function copyTextSilently(val) { if (val && val !== "0000000000" && navigator.clipboard) navigator.clipboard.writeText(val); }
 
         function setupSocketListeners() {
-            socket.on('connect_error', () => { hideLoader(); showToast("無法連線"); });
+            socket.on('connect_error', () => { hideLoader(); showToast("無法連線", true); });
             socket.on('disconnect', () => { hideLoader(); showBackupModal('連線已中斷。', lastValidCode); });
             socket.on('room-joined', d => {
                 hideLoader(); 
@@ -297,7 +315,7 @@ app.get('/', (req, res) => {
             const confirmBtn = document.createElement('button'); confirmBtn.innerText = '確認載入';
             confirmBtn.onclick = () => {
                 let val = document.getElementById('load-record-input').value;
-                if (!/^\\d+$/.test(val)) { alert('請輸入數字'); return; }
+                if (!/^\\d+$/.test(val)) { showToast("請輸入數字", true); return; }
                 processLoadRecord(val.padEnd(10, '0')); overlay.style.display = 'none';
             };
             btns.appendChild(cancelBtn); btns.appendChild(confirmBtn);
@@ -418,7 +436,6 @@ app.get('/', (req, res) => {
 
         function askReset() { showConfirmModal('清空全隊數據？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '確定', callback: () => { socket.emit('grid-reset', currentRoomId); document.getElementById('modal-overlay').style.display = 'none'; } }]); }
         function askLeave() { showConfirmModal('退出房間？', [{ text: '取消', style: 'danger', callback: () => document.getElementById('modal-overlay').style.display = 'none' },{ text: '離開', callback: () => { sessionStorage.removeItem('rj_uid'); location.href='/'; } }]); }
-        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1500); }
         function copyLink() {
             const url = location.origin + '/?room=' + currentRoomId;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => showToast("已複製連結"));
@@ -433,7 +450,8 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
     socket.on('join-room', (data = {}) => {
         const { roomId, uid } = data;
-        if (!roomId || roomId.length < 6 || roomId.length > 10) return socket.emit('error-msg', '房號無效 (6-10字)。');
+        // 伺服器端也增加正規表達式防禦
+        if (!roomId || !/^[A-Z0-9]{6,10}$/.test(roomId)) return socket.emit('error-msg', '房號格式錯誤 (需為6-10字英數字)。');
 
         let room = rooms.get(roomId);
         if (!room) {
@@ -445,8 +463,7 @@ io.on('connection', (socket) => {
         let member = room.members.find(m => m.uid === uid);
         if (member) member.id = socket.id;
         else if (room.members.length < 4) {
-            const activeNames = room.members.map(m => m.name);
-            const assignedName = room.namePool.find(n => !activeNames.includes(n));
+            const assignedName = room.namePool.find(n => !room.members.map(m=>m.name).includes(n));
             member = { id: socket.id, uid: uid || Math.random().toString(36).substring(2, 15), name: assignedName };
             room.members.push(member);
         } else return socket.emit('error-msg', '房間已滿。');
@@ -480,4 +497,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.2.0 Online.'));
+server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.2.3 Online.'));
