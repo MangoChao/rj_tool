@@ -8,8 +8,8 @@ const io = new Server(server);
 
 // --- 核心配置 ---
 const ROOM_EXPIRY_MS = 600000;  // 10 分鐘
-const MAX_ROOMS = 1000;
-const ANIMAL_NAMES = ['小豬', '阿狗', '阿貓', '兔兔', '牛牛', '老羊', '小雞', '小蛇', '龍哥', '小鬼'];
+const MAX_ROOMS = 500;         // 最大房間數限制
+const ANIMAL_NAMES = ['小豬', '阿狗', '阿貓', '兔兔', '牛牛', '老羊', '小雞', '小蛇', '小魚', '大象', '阿虎', '小龍', '勞鼠', '老猴', '小馬', '阿獅', '小狼', '小鹿'];
 
 const rooms = new Map();
 
@@ -37,9 +37,9 @@ app.get('/', (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>羅密歐與茱麗葉小助手</title>
-    <meta name="description" content="我會長敢吃屎, 你們的敢嗎?">
+    <meta name="description" content="世界是一個巨大的瑞士卷.有的人分到了瑞士,有的人分到了卷">
     <meta property="og:title" content="羅密歐與茱麗葉小助手">
-    <meta property="og:description" content="我會長敢吃屎, 你們的敢嗎?">
+    <meta property="og:description" content="世界是一個巨大的瑞士卷.有的人分到了瑞士,有的人分到了卷">
     <meta property="og:type" content="website">
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --my-green: #28a745; --other-red: #dc3545; --accent: #f9d000; }
@@ -106,7 +106,7 @@ app.get('/', (req, res) => {
                 <p class="manual-text">● 右鍵雙擊：取消別人格子</p>
                 <p class="manual-text">● 自動複製：每次點擊格子都會複製紀錄</p>
             </div>
-            <div class="version-info">v1.2.3 | 最後更新: 2026-03-23 03:00</div>
+            <div class="version-info">v1.2.4 | 最後更新: 2026-03-23 17:35</div>
             <div class="fixed-footer" style="padding-top: 15px;">Made by CC</div>
         </div>
 
@@ -175,8 +175,6 @@ app.get('/', (req, res) => {
 
         function handleManualAction() {
             let val = document.getElementById('manual-room-id').value.trim().toUpperCase();
-            
-            // 修正：檢查是否為純英數字
             if (!/^[A-Z0-9]+$/.test(val)) {
                 showToast("房號只能包含英文字母與數字", true);
                 return;
@@ -450,11 +448,14 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
     socket.on('join-room', (data = {}) => {
         const { roomId, uid } = data;
-        // 伺服器端也增加正規表達式防禦
         if (!roomId || !/^[A-Z0-9]{6,10}$/.test(roomId)) return socket.emit('error-msg', '房號格式錯誤 (需為6-10字英數字)。');
 
         let room = rooms.get(roomId);
         if (!room) {
+            // --- 重點修正：檢查最大房間數限制 ---
+            if (rooms.size >= MAX_ROOMS) {
+                return socket.emit('error-msg', '目前伺服器房間數已達上限，請稍後再試。');
+            }
             const shuffled = [...ANIMAL_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
             room = { members: [], namePool: shuffled, lastActive: Date.now(), gridState: {} };
             rooms.set(roomId, room);
@@ -463,7 +464,8 @@ io.on('connection', (socket) => {
         let member = room.members.find(m => m.uid === uid);
         if (member) member.id = socket.id;
         else if (room.members.length < 4) {
-            const assignedName = room.namePool.find(n => !room.members.map(m=>m.name).includes(n));
+            const activeNames = room.members.map(m => m.name);
+            const assignedName = room.namePool.find(n => !activeNames.includes(n));
             member = { id: socket.id, uid: uid || Math.random().toString(36).substring(2, 15), name: assignedName };
             room.members.push(member);
         } else return socket.emit('error-msg', '房間已滿。');
@@ -497,4 +499,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.2.3 Online.'));
+server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.2.4 Online.'));
