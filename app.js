@@ -359,7 +359,7 @@ const JS_PART = `
             const occupier = members.find(m => m.colorIndex === idx); 
             const isMine = occupier && occupier.name === myName; 
             const isDisabled = occupier && !isMine; 
-            colorHtml += '<div class="color-cell '+(isDisabled ? 'disabled' : '')+' '+(idx === selectedColorIdx ? 'active' : '')+'" style="background:'+hex+'" onclick="'+(isDisabled ? '' : 'selectColor(' + idx + ')')+'">'+(occupier ? occupier.name.slice(-2) : '')+'</div>'; 
+            colorHtml += '<div class="color-cell '+(isDisabled ? 'disabled' : '')+' '+(idx === selectedColorIdx ? 'active' : '')+'" style="background:'+hex+'; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);" onclick="'+(isDisabled ? '' : 'selectColor(' + idx + ')')+'">'+(occupier ? occupier.name.slice(-2) : '')+'</div>';
         }); 
         colorHtml += '</div>'; 
         content.innerHTML = '<input type="text" id="edit-name-input" class="room-input" maxlength="6" value="'+myName+'" onfocus="this.select()">' + colorHtml; 
