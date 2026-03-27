@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>羅密歐與茱麗葉小助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body oncontextmenu="return false;">
+    <div id="loader"><div class="spinner"></div></div>
+
+    <div id="home-view" class="card hidden" style="margin-top: 5vh; width: 360px;">
+        <h1 style="color:var(--my-green); margin-bottom: 5px;">RJ 小助手</h1>
+        <p style="font-size: 0.8em; color: #666;">運作中房間: <span id="room-count">...</span></p>
+        <div style="text-align:left; background:rgba(255,255,255,0.03); padding:15px; border-radius:12px; margin: 15px 0; font-size:0.85em; line-height:1.6; border:1px solid #333;">
+            <b style="color:var(--accent)">🖱️ 操作說明</b><br>
+            左鍵：循環標記 [ 正確 → 錯誤 → 取消 ]<br>
+            右鍵：快速切換 [ 錯誤 ⇄ 取消 ]<br>
+            雙擊右鍵：強制清除該格所有標記
+        </div>
+        <input type="text" id="manual-room-id" class="room-input" maxlength="10" placeholder="房號 (6-10位)">
+        <button onclick="handleManualAction()" style="margin-top: 15px; width: 100%;">進入 / 建立房間</button>
+        <div style="margin-top: 20px; font-size: 11px; color: #444;">v4.0 | Made by CC</div>
+    </div>
+
+    <div id="workspace" class="hidden">
+        <div class="instances-wrapper" id="instances-container"></div>
+        <div class="global-footer">
+            <button class="btn-danger" onclick="askReset()">清空全隊</button>
+            <button class="btn-danger" onclick="askLeave()">退出房間</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div class="modal-card">
+            <div id="modal-content" style="color:#fff"></div>
+            <div id="modal-btns" style="display:flex; gap:10px; margin-top:20px"></div>
+        </div>
+    </div>
+
+    <div id="toast">已複製</div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
