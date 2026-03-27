@@ -30,13 +30,16 @@ setInterval(() => {
 // --- HTML 模板區塊 ---
 // ==========================================
 
-const HEAD_PART = '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>羅密歐與茱麗葉小助手</title><meta name="description" content="操作說明：&#10;左鍵：標記正確格&#10;右鍵：標記錯誤格"><meta property="og:title" content="羅密歐與茱麗葉小助手"><meta property="og:description" content="操作說明：&#10;● 左鍵：標記正確格&#10;● 右鍵：標記錯誤格"><meta property="og:type" content="website">';
+const HEAD_PART = '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>CCC 小助手 - 羅密歐與茱麗葉副本</title><meta name="description" content="操作說明：&#10;左鍵：標記正確格&#10;右鍵：標記錯誤格"><meta property="og:title" content="CCC 小助手 - 羅密歐與茱麗葉副本"><meta property="og:description" content="操作說明：&#10;● 左鍵：標記正確格&#10;● 右鍵：標記錯誤格"><link rel="icon" href="/favicon.ico" type="image/x-icon"><meta property="og:type" content="website">';
 
 const CSS_PART = '<style>:root{--bg:#121212;--card:#1e1e1e;--text:#e0e0e0;--my-green:#28a745;--other-red:#dc3545;--accent:#f9d000}html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif}body{display:flex;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch}.mobile-container{width:100%;max-width:400px;min-height:100%;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;position:relative}.hidden{display:none!important}#loader{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:8000;transition:opacity .3s}.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,0.1);border-top:4px solid var(--my-green);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:8px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,0.4)}.grid-container{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}.row{display:flex;gap:5px;align-items:center;height:40px}.row-label{width:30px;font-size:.7em;color:#666;text-align:center;font-weight:700}.cell{flex:1;height:100%;background:#222;border-radius:6px;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1em;border:1px solid #333;user-select:none;color:#333;overflow:hidden}.cell.mine-ok{background:var(--my-green)!important;color:#fff!important}.cell.mine-wrong{background:#000!important;color:var(--other-red)!important}.cell.others-ok{background:var(--other-red)!important;color:#fff!important;opacity:.8}.prob{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-weight:900;line-height:1}.control-panel{display:flex;flex-direction:column;gap:8px;margin-bottom:15px}.code-display-box{background:#000;border:1px solid #333;padding:10px;border-radius:8px;cursor:pointer;display:flex;justify-content:center;align-items:center;gap:10px}.code-text{color:var(--accent);font-family:monospace;font-size:1.4em;font-weight:700;letter-spacing:2px}.auto-copy-wrap{display:flex;align-items:center;justify-content:center;gap:10px;font-size:.85em;color:#888}.btn-group{display:flex;gap:8px;padding-bottom:20px;position:relative;z-index:10}button{flex:1;padding:15px;font-size:1em;font-weight:700;border:none;border-radius:8px;background:var(--my-green);color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent}.btn-danger{background:#333;color:#999}.fixed-footer{color:var(--accent);font-size:14px;font-weight:700;text-align:center;padding:5px 0 15px 0;user-select:none}.version-info{font-size:12px;color:#555;margin-top:10px}#modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;z-index:5000;backdrop-filter:blur(8px)}.modal-card{background:var(--card);width:85%;max-width:320px;border-radius:16px;padding:25px;border:1px solid #444;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.8);position:relative}#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--my-green);color:#fff;padding:10px 25px;border-radius:25px;opacity:0;transition:.3s;z-index:9999;font-size:14px;font-weight:700;pointer-events:none;box-shadow:0 4px 15px rgba(0,0,0,0.5)}#toast.error{background:var(--other-red)}.record-input{background:#000;border:1px solid #555;color:var(--accent);width:100%;padding:12px;border-radius:8px;font-size:1.5em;text-align:center;letter-spacing:5px;margin-bottom:10px;outline:0}.room-input{background:#000;border:1px solid #444;color:var(--accent);width:85%;padding:12px;border-radius:8px;font-size:1.3em;text-align:center;margin:5px auto;outline:0;display:block;letter-spacing:2px}.room-input:focus{border-color:var(--my-green)}.small-btn{padding:6px 5px;font-size:.9em;background:#333;color:#ccc;border-radius:6px;border:1px solid #444;flex:1;cursor:pointer;font-weight:700}.small-btn:active{background:#444}.manual-text{color:#aaa;font-size:1em;margin:8px 0;line-height:1.4}.edit-label{font-size:.85em;color:#666;margin-bottom:5px;display:block}.blink{animation:blinker 1.5s linear infinite;color:var(--my-green);font-weight:700}@keyframes blinker{50%{opacity:.3}}.edit-btn{cursor:pointer;margin-right:6px;vertical-align:middle;transition:.2s;display:inline-flex;align-items:center;justify-content:center}.edit-btn:hover{opacity:.6}.edit-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.color-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:15px 0}.color-cell{aspect-ratio:1.3/1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9em;color:#fff;cursor:pointer;border:2px solid transparent;opacity:.3;transition:.2s}.color-cell.active{border-color:#fff;opacity:1;transform:scale(1.05)}.color-cell.disabled{cursor:not-allowed;border:none;opacity:1;box-shadow:inset 0 0 10px rgba(0,0,0,0.5)}.mode-toggle-bar{background:#1a1a1a;color:#888;padding:8px;border-radius:8px;margin-bottom:8px;font-size:0.85em;font-weight:bold;cursor:pointer;text-align:center;transition:0.3s;user-select:none;border:1px solid #333;position:relative;overflow:hidden}.mode-toggle-bar.active{color:#fff;border:1px solid transparent;background: linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(90deg, #ff4d4d, #f1c40f, #00ff7f, #1e90ff, #a020f0) border-box;animation: rainbow-border 3s linear infinite;}@keyframes rainbow-border{0%{background-image: linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(0deg, #ff4d4d, #f1c40f, #00ff7f, #1e90ff, #a020f0) border-box;}100%{background-image: linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(360deg, #ff4d4d, #f1c40f, #00ff7f, #1e90ff, #a020f0) border-box;}}</style>';
 
 const HOME_VIEW_PART = `
     <div id="home-view" class="card hidden" style="margin-top: 5vh;">
-        <h1 style="color:var(--my-green); font-size: 1.8em; margin-bottom: 10px;">RJ 小助手</h1>
+        <h1 style="color:var(--my-green); font-size: 1.5em; margin-bottom: 5px;">CCC 小助手</h1>
+        <div style="font-size: 0.9em; color: #888; margin-bottom: 20px; font-weight: normal;">
+            羅密歐與茱麗葉副本專用
+        </div>
         <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">運作房間: <span id="room-count">...</span> / 1000</p>
         
         <div style="text-align:left; background:rgba(255,255,255,0.03); padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #2a2a2a; font-size:0.9em; line-height:1.6;">
@@ -49,9 +52,10 @@ const HOME_VIEW_PART = `
 
         <span class="edit-label">▼ <span class="blink">自訂房號</span> (英數字 6-10字)</span>
         <input type="text" id="manual-room-id" class="room-input" maxlength="10" placeholder="輸入自訂房號" onfocus="this.select()">
-        <button onclick="handleManualAction()" style="margin-top: 10px; width: 90%; font-size: 1.1em;">建立 / 加入房間</button>
+        <button onclick="handleManualAction()" style="margin-top: 10px; width: 90%; font-size: 1.1em;">一般模式</button>
+        <button onclick="openWindow()" style="margin-top: 10px; width: 90%; font-size: 0.9em; background: #407af8;">小窗模式</button>
         
-        <div class="version-info" style="margin-top:20px;">v1.4.0 | 最後更新: 2026-03-27 13:00</div>
+        <div class="version-info" style="margin-top:20px;">v1.4.7 | 最後更新: 2026-03-27 15:14</div>
         <div class="fixed-footer" style="padding-top: 15px;">Made by CC</div>
     </div>
 `;
@@ -85,6 +89,13 @@ const JS_PART = `
         if (targetRoom) { currentRoomId = targetRoom.toUpperCase(); initAction('join', targetRoom); }
         else { hideLoader(); document.getElementById('home-view').classList.remove('hidden'); }
     };
+    
+    function openWindow() {
+        const roomId = document.getElementById('manual-room-id').value.trim().toUpperCase();
+        if (roomId.length < 6) return showToast("請先輸入正確房號", true);
+        const url = window.location.origin + "/?room=" + roomId;
+        window.open(url, "_blank", "width=400,height=850,menubar=no,toolbar=no,location=no");
+    }
 
     function toggleColorMode() {
         isColorMode = !isColorMode;
@@ -366,6 +377,7 @@ const JS_PART = `
 // ==========================================
 // --- Express 路由 ---
 // ==========================================
+app.get('/favicon.ico', (req, res) => res.sendFile(__dirname + '/favicon.ico'));
 
 app.get('/api/stats', (req, res) => { 
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -489,4 +501,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.4.0 Online.'));
+server.listen(3000, () => console.log('羅密歐與茱麗葉小助手 v1.4.1 Online.'));
