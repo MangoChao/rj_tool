@@ -60,7 +60,7 @@ const HOME_VIEW_PART = `
     </div>
 `;
 
-const ROOM_VIEW_PART = '<div id="room-view" class="hidden"><div class="card" style="padding: 10px 12px;"><div style="margin-bottom: 8px;"><div style="font-size: 0.85em; color: #666; margin-bottom: 0px;">房號</div><div id="display-room-id" style="font-size: 1.8em; color: var(--accent); font-weight: bold; font-family: monospace; letter-spacing: 2px; line-height: 1.2;"></div></div><div style="display: flex; gap: 10px; margin-bottom: 12px;"><div class="small-btn" onclick="copyRoomID()">複製房號</div><div class="small-btn" onclick="copyLink()">複製連結</div></div><div style="display:flex; justify-content:space-between; font-size:1em; color:#bbb; border-top: 1px solid #333; padding-top: 10px;"><div style="display: flex; align-items: center;"><span class="edit-btn" onclick="openEditProfile()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg></span>你是 <b id="my-name-display" style="color:var(--my-green); font-size: 1.1em; margin-left:4px;"></b></div><div>人數 <b id="online-count-display" style="color:var(--accent); font-size: 1.1em;">0/4</b></div></div></div><div id="mode-toggle" class="mode-toggle-bar" onclick="toggleColorMode()">當前模式：雙色</div><div class="grid-container" id="grid"></div><div class="control-panel"><div class="code-display-box" onclick="copyMyCode()"><span id="live-code" class="code-text">00000 00000</span></div><div style="display:flex; gap:8px;"><div class="auto-copy-wrap" style="flex:1; justify-content:flex-start;"><input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"><label for="auto-copy-toggle" style="margin-left: 8px; font-size: 0.95em;">開啟自動複製</label></div><button type="button" style="padding:6px 12px; font-size:0.9em; background:#444;" onclick="askLoadRecord()">載入紀錄</button></div></div><div class="btn-group"><button type="button" class="btn-danger" onclick="askReset()">清空全部</button><button type="button" class="btn-danger" onclick="askLeave()">退出</button></div><div class="fixed-footer">Made by CC</div></div>';
+const ROOM_VIEW_PART = '<div id="room-view" class="hidden"><div class="card" style="padding: 10px 12px;"><div style="margin-bottom: 8px;"><div style="font-size: 0.85em; color: #666; margin-bottom: 0px;">房號</div><div id="display-room-id" style="font-size: 1.8em; color: var(--accent); font-weight: bold; font-family: monospace; letter-spacing: 2px; line-height: 1.2;"></div></div><div style="display: flex; gap: 10px; margin-bottom: 12px;"><div class="small-btn" onclick="copyRoomID()">複製房號</div><div class="small-btn" onclick="copyLink()">複製連結</div><div class="small-btn" onclick="openWindow()">多開小窗</div></div><div style="display:flex; justify-content:space-between; font-size:1em; color:#bbb; border-top: 1px solid #333; padding-top: 10px;"><div style="display: flex; align-items: center;"><span class="edit-btn" onclick="openEditProfile()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg></span>你是 <b id="my-name-display" style="color:var(--my-green); font-size: 1.1em; margin-left:4px;"></b></div><div>人數 <b id="online-count-display" style="color:var(--accent); font-size: 1.1em;">0/4</b></div></div></div><div id="mode-toggle" class="mode-toggle-bar" onclick="toggleColorMode()">當前模式：雙色</div><div class="grid-container" id="grid"></div><div class="control-panel"><div class="code-display-box" onclick="copyMyCode()"><span id="live-code" class="code-text">00000 00000</span></div><div style="display:flex; gap:8px;"><div class="auto-copy-wrap" style="flex:1; justify-content:flex-start;"><input type="checkbox" id="auto-copy-toggle" style="transform: scale(1.3);"><label for="auto-copy-toggle" style="margin-left: 8px; font-size: 0.95em;">開啟自動複製</label></div><button type="button" style="padding:6px 12px; font-size:0.9em; background:#444;" onclick="askLoadRecord()">載入紀錄</button></div></div><div class="btn-group"><button type="button" class="btn-danger" onclick="askReset()">清空全部</button><button type="button" class="btn-danger" onclick="askLeave()">退出</button></div><div class="fixed-footer">Made by CC</div></div>';
 
 const JS_PART = `
 <script src="/socket.io/socket.io.js"></script>
@@ -73,6 +73,11 @@ const JS_PART = `
     let selectedColorIdx = -1;
 
     window.onload = () => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('isNew') === '1') {
+            sessionStorage.removeItem('rj_uid'); // 移除舊身分 UID
+            window.history.replaceState({}, '', '?room=' + params.get('room').toUpperCase());
+        }
         getStats();
         renderGridStructure();
         
@@ -91,9 +96,10 @@ const JS_PART = `
     };
     
     function openWindow() {
-        const roomId = document.getElementById('manual-room-id').value.trim().toUpperCase();
-        if (roomId.length < 6) return showToast("請先輸入正確房號", true);
-        const url = window.location.origin + "/?room=" + roomId;
+        const roomId = (currentRoomId || document.getElementById('manual-room-id').value).trim().toUpperCase();
+        if (!roomId || roomId.length < 6) return showToast("請先輸入或加入房號", true);
+        
+        const url = window.location.origin + "/?room=" + roomId + "&isNew=1";
         window.open(url, "_blank", "width=400,height=850,menubar=no,toolbar=no,location=no");
     }
 
@@ -150,6 +156,24 @@ const JS_PART = `
             grid.appendChild(row);
         }
     }
+        
+    function showErrorModal(msg) {
+        const c = document.getElementById('modal-content');
+        const b = document.getElementById('modal-btns');
+        const o = document.getElementById('modal-overlay');
+        
+        c.innerHTML = '<b style="color:var(--other-red)">無法進入房間</b><br>' + msg;
+        c.onclick = null; // 移除點擊複製紀錄的功能，因為進不去房間通常也沒紀錄
+        
+        b.innerHTML = '';
+        const h = document.createElement('button');
+        h.style.width = '100%'; // 讓按鈕撐滿，視覺上更明確
+        h.innerText = '回到首頁';
+        h.onclick = () => location.href = '/';
+        
+        b.appendChild(h);
+        o.style.display = 'flex';
+    }
 
     function setupSocketListeners() {
         socket.on('connect_error', () => { hideLoader(); showToast("無法連線", true); });
@@ -178,7 +202,17 @@ const JS_PART = `
             if(document.getElementById('online-count-display')) document.getElementById('online-count-display').innerText = list.length + '/4';
             renderGrid();
         });
-        socket.on('error-msg', m => { hideLoader(); if (m.includes(\'解散\') || m.includes(\'無效\') || m.includes(\'已滿\')) showBackupModal(m, lastValidCode); else showToast(m, true); });
+        socket.on('error-msg', m => {
+            hideLoader();
+            if (m.includes('滿')) {
+                // 如果是房間已滿，直接顯示專用的錯誤 Modal，不給重連選項
+                showErrorModal(m);
+            } else if (m.includes('解散') || m.includes('無效')) {
+                showBackupModal(m, lastValidCode);
+            } else {
+                showToast(m, true);
+            }
+        });
         socket.on('grid-reset-sync', () => { globalGridData = {}; lastValidCode = "0000000000"; updateMyGreenCode(); renderGrid(); });
     }
 
@@ -407,7 +441,7 @@ io.on('connection', (socket) => {
 
         let room = rooms.get(roomId);
         if (!room) {
-            if (rooms.size >= MAX_ROOMS) return socket.emit('error-msg', '伺服器房間已滿。');
+            if (rooms.size >= MAX_ROOMS) return socket.emit('error-msg', '伺服器房間已滿');
             room = { members: [], lastActive: Date.now(), gridState: {} };
             rooms.set(roomId, room);
         }
@@ -433,7 +467,7 @@ io.on('connection', (socket) => {
             };
             room.members.push(member);
         } else {
-            return socket.emit('error-msg', '房間已滿。');
+            return socket.emit('error-msg', '房間已滿');
         }
         
         socket.join(roomId);
